@@ -35,12 +35,12 @@ const formatDate = (value?: string) => {
   }).format(new Date(value))
 }
 
-const getFeaturedImageUrl = (post?: Post, width = 1200, height = 720) => {
+const getFeaturedImageUrl = (post?: Post | null, width = 1200, height = 720) => {
   if (!post?.featuredImage) return null
   return urlFor(post.featuredImage).width(width).height(height).url()
 }
 
-const getFeaturedImageAlt = (post?: Post) => {
+const getFeaturedImageAlt = (post?: Post | null) => {
   if (!post) return "Featured image"
   return post.featuredImage?.alt || post.title
 }
