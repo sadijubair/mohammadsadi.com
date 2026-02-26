@@ -1,0 +1,27 @@
+<svg width="960" height="960" viewBox="0 0 960 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="128" y1="96" x2="816" y2="832" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="faceGrad" x1="480" y1="240" x2="480" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#CBD5E1"/>
+    </linearGradient>
+    <linearGradient id="coatGrad" x1="480" y1="540" x2="480" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E293B"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="960" height="960" rx="72" fill="url(#bgGrad)"/>
+  <circle cx="480" cy="420" r="220" fill="#A78BFA" fill-opacity="0.22"/>
+  <circle cx="480" cy="380" r="170" fill="url(#faceGrad)"/>
+  <path d="M310 378C310 286 385 214 480 214C575 214 650 286 650 378V392H310V378Z" fill="#0F172A"/>
+  <rect x="430" y="360" width="100" height="42" rx="21" fill="#020617" fill-opacity="0.55"/>
+  <rect x="320" y="560" width="320" height="300" rx="156" fill="url(#coatGrad)"/>
+  <path d="M352 708C392 662 432 640 480 640C528 640 568 662 608 708" stroke="#A78BFA" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="420" cy="372" r="12" fill="#0F172A"/>
+  <circle cx="540" cy="372" r="12" fill="#0F172A"/>
+  <path d="M430 436C446 450 464 458 480 458C496 458 514 450 530 436" stroke="#64748B" stroke-width="10" stroke-linecap="round"/>
+</svg>

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import "./pace.css";
+import PaceLoader from "@/components/PaceLoader";
+import { Analytics } from "@vercel/analytics/react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer"
 
@@ -16,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL("https://your-domain.com"),
-  title: "Sadi Blog",
+  metadataBase: new URL("https://mohammadsadi.com"),
+  title: "Mohammad Sadi",
   description: "Political, Tech, Islamic & Opinion Blog",
 };
 
@@ -31,9 +33,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <PaceLoader />
         <Header />
         {children}
         <Footer />
+        <Analytics />
       </body>
     </html>
   );
