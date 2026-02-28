@@ -4,6 +4,6 @@ export default function robots() {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://your-domain.com/sitemap.xml",
+    sitemap: "https://mohammadsadi.com/sitemap.xml",
   }
 }

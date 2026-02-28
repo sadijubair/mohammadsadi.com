@@ -1,7 +1,7 @@
 import { client } from "@/lib/sanity"
 
 export default async function sitemap() {
-  const baseUrl = "https://your-domain.com"
+  const baseUrl = "https://mohammadsadi.com"
 
   const posts = await client.fetch(`
     *[_type == "post"]{

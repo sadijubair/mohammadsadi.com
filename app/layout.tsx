@@ -4,6 +4,7 @@ import "./globals.css";
 import "./pace.css";
 import PaceLoader from "@/components/PaceLoader";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer"
 
@@ -38,6 +39,7 @@ export default function RootLayout({
         {children}
         <Footer />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

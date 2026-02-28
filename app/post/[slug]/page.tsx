@@ -1,6 +1,7 @@
 import { client } from "@/lib/sanity"
 import { PortableText } from "@portabletext/react"
 import type { PortableTextBlock } from "@portabletext/types"
+import type { PortableTextComponents } from "@portabletext/react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { urlFor } from "@/lib/image"
@@ -46,6 +47,13 @@ type RelatedPost = {
   publishedAt?: string
 }
 
+type Heading = {
+  id: string
+  text: string
+  level: 2 | 3
+  key: string
+}
+
 const formatDate = (value?: string) => {
   if (!value) return "Recently published"
 
@@ -71,6 +79,50 @@ const estimateReadingMinutes = (body?: PortableTextBlock[]) => {
 
   const words = text.trim().split(/\s+/).filter(Boolean).length
   return Math.max(1, Math.ceil(words / 220))
+}
+
+const blockToPlainText = (block?: PortableTextBlock) => {
+  if (!block || !("children" in block) || !Array.isArray(block.children)) return ""
+
+  return block.children
+    .map((child) => ("text" in child && typeof child.text === "string" ? child.text : ""))
+    .join(" ")
+    .trim()
+}
+
+const toSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+
+const buildHeadings = (body?: PortableTextBlock[]) => {
+  if (!body?.length) return []
+
+  const counts = new Map<string, number>()
+  const headings: Heading[] = []
+
+  body.forEach((block, index) => {
+    if (!("style" in block) || (block.style !== "h2" && block.style !== "h3")) return
+
+    const text = blockToPlainText(block)
+    if (!text) return
+
+    const base = toSlug(text) || `section-${index + 1}`
+    const count = (counts.get(base) ?? 0) + 1
+    counts.set(base, count)
+
+    headings.push({
+      id: count > 1 ? `${base}-${count}` : base,
+      text,
+      level: block.style === "h2" ? 2 : 3,
+      key: typeof block._key === "string" ? block._key : `${base}-${index}`,
+    })
+  })
+
+  return headings
 }
 
 async function getPost(slug: string) {
@@ -151,6 +203,8 @@ export default async function PostPage({
   const readingMinutes = estimateReadingMinutes(post.body)
   const categoryIds = post.categories?.map((category) => category._id) ?? []
   const related = await getRelatedPosts(categoryIds, post._id)
+  const headings = buildHeadings(post.body)
+  const headingIdByKey = new Map(headings.map((item) => [item.key, item.id]))
 
   const authorLinks = [
     { label: "Website", href: post.author?.website },
@@ -162,6 +216,50 @@ export default async function PostPage({
   const authorImageUrl = post.author?.image ? urlFor(post.author.image).width(120).height(120).url() : null
   const featuredImageUrl = post.featuredImage ? urlFor(post.featuredImage).width(1800).height(1000).url() : null
   const featuredImageAlt = post.featuredImage?.alt || post.title
+  const postUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://mohammadsadi.com"}/post/${slug}`
+  const encodedTitle = encodeURIComponent(post.title)
+  const encodedUrl = encodeURIComponent(postUrl)
+  const shareLinks = [
+    { label: "X", href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}` },
+    { label: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}` },
+    { label: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}` },
+    { label: "Email", href: `mailto:?subject=${encodedTitle}&body=${encodeURIComponent(`${post.title}\n\n${postUrl}`)}` },
+  ]
+
+  const portableComponents: PortableTextComponents = {
+    block: {
+      h2: ({ children, value }) => {
+        const id = value?._key ? headingIdByKey.get(value._key) : undefined
+        return (
+          <h2 id={id} className="mt-12 scroll-mt-28 border-t border-slate-200 pt-8 font-serif text-3xl font-bold text-[var(--text-primary)]">
+            {children}
+          </h2>
+        )
+      },
+      h3: ({ children, value }) => {
+        const id = value?._key ? headingIdByKey.get(value._key) : undefined
+        return (
+          <h3 id={id} className="mt-8 scroll-mt-28 font-serif text-2xl font-semibold text-[var(--text-primary)]">
+            {children}
+          </h3>
+        )
+      },
+    },
+    marks: {
+      link: ({ children, value }) => {
+        const href = typeof value?.href === "string" ? value.href : "#"
+        const external = /^https?:\/\//.test(href)
+        return (
+          <a href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer noopener" : undefined}>
+            {children}
+          </a>
+        )
+      },
+      code: ({ children }) => (
+        <code className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[0.92em] font-semibold text-slate-800">{children}</code>
+      ),
+    },
+  }
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -229,7 +327,7 @@ export default async function PostPage({
       <section className="relative w-full overflow-hidden bg-[var(--background)]">
         <div className="absolute inset-0 z-0 opacity-80 [background-image:linear-gradient(to_right,#e7e5e4_1px,transparent_1px),linear-gradient(to_bottom,#e7e5e4_1px,transparent_1px)] [background-size:20px_20px] [mask-image:repeating-linear-gradient(to_right,black_0px,black_3px,transparent_3px,transparent_8px),repeating-linear-gradient(to_bottom,black_0px,black_3px,transparent_3px,transparent_8px)] [-webkit-mask-image:repeating-linear-gradient(to_right,black_0px,black_3px,transparent_3px,transparent_8px),repeating-linear-gradient(to_bottom,black_0px,black_3px,transparent_3px,transparent_8px)] [mask-composite:intersect] [-webkit-mask-composite:source-in]" />
 
-        <div className="relative z-10 mx-auto grid max-w-7xl gap-8 px-6 py-12 md:py-14 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="relative z-10 mx-auto grid max-w-7xl gap-8 px-6 py-12 md:py-14 lg:grid-cols-[minmax(0,1fr)_340px]">
           <article className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-35px_rgba(2,6,23,0.5)] md:p-10">
             {featuredImageUrl && (
               <figure className="mb-8 overflow-hidden rounded-2xl border border-slate-200">
@@ -238,8 +336,8 @@ export default async function PostPage({
               </figure>
             )}
 
-            <div className="prose prose-slate max-w-none prose-headings:font-serif prose-headings:text-[var(--text-primary)] prose-p:text-[var(--text-secondary)] prose-a:text-[var(--primary-start)] prose-a:no-underline hover:prose-a:underline prose-strong:text-[var(--text-primary)] prose-blockquote:border-l-[var(--accent)] prose-blockquote:bg-[var(--surface)]/45 prose-blockquote:px-4 prose-blockquote:py-2 prose-ul:marker:text-[var(--primary-start)]">
-              <PortableText value={post.body ?? []} />
+            <div className="prose prose-slate max-w-none text-[1.04rem] leading-8 prose-headings:font-serif prose-headings:text-[var(--text-primary)] prose-p:text-[var(--text-secondary)] prose-a:font-semibold prose-a:text-[var(--primary-start)] prose-a:no-underline hover:prose-a:underline prose-strong:text-[var(--text-primary)] prose-li:text-[var(--text-secondary)] prose-ol:marker:text-[var(--primary-start)] prose-ul:marker:text-[var(--primary-start)]">
+              <PortableText value={post.body ?? []} components={portableComponents} />
             </div>
 
             {related.length > 0 && (
@@ -271,6 +369,48 @@ export default async function PostPage({
           </article>
 
           <aside className="space-y-6 lg:sticky lg:top-28 lg:self-start">
+            {headings.length > 0 && (
+              <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(2,6,23,0.45)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">On this page</p>
+                <nav aria-label="Table of contents" className="mt-4 space-y-2">
+                  {headings.map((item) => (
+                    <a
+                      key={item.id}
+                      href={`#${item.id}`}
+                      className={`block rounded-lg px-2 py-1.5 text-sm transition-colors duration-200 hover:bg-[var(--surface)] hover:text-[var(--primary-start)] ${
+                        item.level === 3 ? "ml-3 text-[var(--text-secondary)]" : "font-semibold text-[var(--text-primary)]"
+                      }`}
+                    >
+                      {item.text}
+                    </a>
+                  ))}
+                </nav>
+              </section>
+            )}
+
+            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(2,6,23,0.45)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Share</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {shareLinks.map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-full border border-slate-200 bg-[var(--surface)] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] transition-colors duration-200 hover:bg-slate-200"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+              <a
+                href={postUrl}
+                className="mt-4 block break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-[var(--text-secondary)]"
+              >
+                {postUrl}
+              </a>
+            </section>
+
             {post.author && (
               <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(2,6,23,0.45)]">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Author</p>

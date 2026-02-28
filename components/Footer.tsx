@@ -55,7 +55,7 @@ export default function Footer() {
   }
 
   return (
-    <footer id="newsletter" className="mt-20 bg-[var(--secondary)] text-white">
+    <footer id="newsletter" className="mt-0 bg-[var(--secondary)] text-white">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-[var(--primary-start)] to-[var(--primary-end)] p-6 shadow-xl shadow-indigo-500/30 md:p-10">
           <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:items-center">
@@ -135,8 +135,8 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col items-start justify-between gap-2 border-t border-white/15 pt-6 text-sm text-slate-400 sm:flex-row sm:items-center">
-          <p>Copyright {new Date().getFullYear()} Mohammad Sadi. All rights reserved.</p>
-          <p>Built with Next.js and Sanity</p>
+          <p>All rights reserved</p>
+          <p>Built with ❤️ by PhenomCode</p>
         </div>
       </div>
     </footer>
