@@ -2,6 +2,42 @@ import { client } from '@/lib/sanity'
 import Image from 'next/image'
 import Link from 'next/link'
 import { urlFor } from '@/lib/image'
+import type { Metadata } from 'next'
+
+export const revalidate = 60
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mohammadsadi.com'
+
+export const metadata: Metadata = {
+  title: 'Mohammad Sadi \u2013 Political, Tech & Opinion Blog',
+  description:
+    'Independent writing by Mohammad Sadi on politics, geopolitics, technology, Islamic thought and opinion. Insightful long-form essays and analysis.',
+  alternates: { canonical: BASE_URL },
+  openGraph: {
+    title: 'Mohammad Sadi \u2013 Political, Tech & Opinion Blog',
+    description:
+      'Independent writing by Mohammad Sadi on politics, geopolitics, technology, Islamic thought and opinion.',
+    url: BASE_URL,
+    type: 'website',
+    images: [
+      {
+        url: `${BASE_URL}/api/og?title=Mohammad+Sadi&desc=Politics%2C+Technology+%26+Independent+Opinion`,
+        width: 1200,
+        height: 630,
+        alt: 'Mohammad Sadi – Independent Writing',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Mohammad Sadi \u2013 Political, Tech & Opinion Blog',
+    description:
+      'Independent writing by Mohammad Sadi on politics, geopolitics, technology, Islamic thought and opinion.',
+    images: [
+      `${BASE_URL}/api/og?title=Mohammad+Sadi&desc=Politics%2C+Technology+%26+Independent+Opinion`,
+    ],
+  },
+}
 
 type SanityImage = {
   alt?: string
@@ -45,8 +81,11 @@ const getFeaturedImageAlt = (post?: Post | null) => {
   return post.featuredImage?.alt || post.title
 }
 
-async function getData() {
-  return await client.fetch<HomeData>(`
+const EMPTY_DATA: HomeData = { latest: null, posts: [], politics: [], tech: [], islam: [] }
+
+async function getData(): Promise<HomeData> {
+  try {
+    return await client.fetch<HomeData>(`
     {
       "latest": *[_type == "post"] | order(publishedAt desc)[0]{
         title,
@@ -77,342 +116,346 @@ async function getData() {
       }
     }
   `)
+  } catch (err) {
+    console.error("[getData] Sanity fetch failed:", err)
+    return EMPTY_DATA
+  }
 }
 
 export default async function Home() {
   const data = await getData()
   const categorySections = [
-    {
-      title: "Politics",
-      href: "/category/politics",
-      posts: data.politics,
-      shell: "bg-[linear-gradient(140deg,rgba(79,70,229,0.11),rgba(167,139,250,0.08))]",
-      badge: "bg-[var(--primary-start)]/10 text-[var(--primary-start)]",
-      line: "from-[var(--primary-start)] to-[var(--accent)]",
-    },
-    {
-      title: "Tech",
-      href: "/category/tech",
-      posts: data.tech,
-      shell: "bg-[linear-gradient(140deg,rgba(6,182,212,0.12),rgba(79,70,229,0.08))]",
-      badge: "bg-cyan-500/10 text-cyan-700",
-      line: "from-[var(--primary-end)] to-[var(--primary-start)]",
-    },
-    {
-      title: "Islamic",
-      href: "/category/islam",
-      posts: data.islam,
-      shell: "bg-[linear-gradient(140deg,rgba(167,139,250,0.16),rgba(6,182,212,0.08))]",
-      badge: "bg-[var(--accent)]/20 text-violet-700",
-      line: "from-[var(--accent)] to-[var(--primary-end)]",
-    },
+    { title: "Politics", href: "/category/politics", posts: data.politics },
+    { title: "Tech",     href: "/category/tech",     posts: data.tech },
+    { title: "Islamic",  href: "/category/islam",    posts: data.islam },
   ]
   const latestImageUrl = getFeaturedImageUrl(data.latest, 1500, 860)
-  const leadCategoryPost = categorySections[0]?.posts[0]
-  const leadCategoryImageUrl = getFeaturedImageUrl(leadCategoryPost, 1200, 700)
 
   return (
     <>
-      <section className="relative isolate w-full overflow-hidden bg-[#0b1220] text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(79,70,229,0.55),transparent_42%),radial-gradient(circle_at_85%_5%,rgba(6,182,212,0.38),transparent_36%),linear-gradient(120deg,#0b1220_0%,#111827_45%,#0f172a_100%)]" />
-        <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(to_right,rgba(241,245,249,0.16)_1px,transparent_1px),linear-gradient(to_bottom,rgba(241,245,249,0.16)_1px,transparent_1px)] [background-size:46px_46px]" />
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0b1220] to-transparent" />
+      {/* ═══════════════ HERO ═══════════════ */}
+      <section className="relative w-full overflow-hidden border-b-2 border-black bg-white">
 
-        <div className="relative mx-auto grid min-h-[calc(100dvh-5rem)] max-w-7xl items-center gap-12 px-6 py-16 md:py-20 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
-            <p className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-100/90 backdrop-blur-sm">
-              Personal Journal
-            </p>
-            <h1 className="mt-6 text-4xl font-black leading-[1.05] md:text-6xl">
-              Mohammad Sadi
-              <span className="mt-2 block bg-gradient-to-r from-[var(--accent)] to-[var(--primary-end)] bg-clip-text text-transparent">
-                Ideas with Depth
-              </span>
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate-200 md:text-lg">
-              Political commentary, technology insight, Islamic reflection, and bold opinions crafted for readers who
-              want clarity over noise.
-            </p>
+        {/* Decorative large ghost text */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-4 bottom-0 select-none font-serif text-[clamp(8rem,28vw,22rem)] font-black leading-none tracking-tighter text-zinc-100"
+        >
+          SADI
+        </span>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/#newsletter"
-                className="rounded-full bg-gradient-to-r from-[var(--primary-start)] to-[var(--primary-end)] px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-indigo-900/40 transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                Join Newsletter
-              </Link>
-              <Link
-                href="/category/opinion"
-                className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-colors duration-200 hover:bg-white/20"
-              >
-                Read Opinion
-              </Link>
+        <div className="relative mx-auto grid min-h-[80vh] max-w-7xl grid-cols-1 lg:grid-cols-2">
+
+          {/* ── Left: copy ── */}
+          <div className="flex flex-col justify-between border-black px-6 py-14 lg:border-r lg:px-14 lg:py-16">
+            <div>
+              {/* Run-of-paper label */}
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-1 bg-black" />
+                <p className="text-[10px] font-black uppercase tracking-[0.45em] text-zinc-400">
+                  Independent Writing · Est. 2024
+                </p>
+              </div>
+
+              {/* Headline */}
+              <h1 className="mt-8 font-serif text-[clamp(3rem,7vw,6.5rem)] font-black leading-[0.92] tracking-tighter text-black">
+                Mohammad<br />Sadi
+              </h1>
+
+              {/* Deck text */}
+              <p className="mt-7 max-w-sm border-l-2 border-black pl-4 text-sm leading-relaxed text-zinc-500 md:text-base">
+                Political commentary, technology insight, Islamic reflection,
+                and bold opinion — crafted for readers who want clarity over noise.
+              </p>
             </div>
-          </div>
 
-          <div className="mx-auto w-full max-w-xl">
-            <div className="relative">
-              <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-[var(--primary-start)]/45 via-[var(--accent)]/30 to-[var(--primary-end)]/45 blur-2xl" />
-              <div className="absolute -left-5 -top-5 h-16 w-16 rounded-2xl border border-white/30 bg-white/10 backdrop-blur-md" />
-              <div className="absolute -bottom-5 -right-5 h-20 w-20 rounded-[1.25rem] border border-white/30 bg-white/10 backdrop-blur-md" />
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-4 backdrop-blur-sm shadow-2xl shadow-black/35">
-                <Image
-                  src="/profile.jpeg"
-                  alt="Mohammad Sadi hero portrait"
-                  width={640}
-                  height={640}
-                  priority
-                  className="h-auto w-full rounded-[1.35rem] object-cover"
-                />
+            {/* CTA + categories */}
+            <div className="mt-12">
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/#newsletter"
+                  className="inline-block border-2 border-black bg-black px-7 py-3 text-[11px] font-black uppercase tracking-[0.3em] text-white transition-colors duration-150 hover:bg-white hover:text-black"
+                >
+                  Subscribe
+                </Link>
+                <Link
+                  href="/category/opinion"
+                  className="inline-block border-2 border-black px-7 py-3 text-[11px] font-black uppercase tracking-[0.3em] text-black transition-colors duration-150 hover:bg-black hover:text-white"
+                >
+                  Read Opinion
+                </Link>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-x-5 gap-y-1 border-t border-zinc-200 pt-6">
+                {[
+                  { label: "Politics", href: "/category/politics" },
+                  { label: "Technology", href: "/category/tech" },
+                  { label: "Islam", href: "/category/islam" },
+                  { label: "Opinion", href: "/category/opinion" },
+                ].map((cat) => (
+                  <Link
+                    key={cat.href}
+                    href={cat.href}
+                    className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 transition-colors duration-150 hover:text-black"
+                  >
+                    {cat.label}
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
+
+          {/* ── Right: portrait ── */}
+          <div className="relative flex items-end justify-center overflow-hidden bg-zinc-50 px-8 pt-10 lg:items-end lg:justify-end lg:px-16">
+            {/* Rotated label */}
+            <span
+              aria-hidden="true"
+              className="absolute left-5 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-black uppercase tracking-[0.5em] text-zinc-300 lg:left-6"
+            >
+              Personal Journal
+            </span>
+
+            <div className="relative z-10 w-full max-w-sm lg:max-w-none">
+              {/* Number tag */}
+              <div className="absolute -left-3 -top-3 z-20 border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-black">
+                01
+              </div>
+              <Image
+                src="/profile.jpeg"
+                alt="Mohammad Sadi"
+                width={600}
+                height={720}
+                priority
+                className="relative block h-auto w-full object-cover object-top"
+                style={{ aspectRatio: "5/6" }}
+              />
+            </div>
+          </div>
+
         </div>
       </section>
 
-      <section className="relative min-h-screen w-full overflow-hidden bg-[var(--background)]">
-        <div className="absolute inset-0 z-0 opacity-80 [background-image:linear-gradient(to_right,#e7e5e4_1px,transparent_1px),linear-gradient(to_bottom,#e7e5e4_1px,transparent_1px)] [background-size:20px_20px] [mask-image:repeating-linear-gradient(to_right,black_0px,black_3px,transparent_3px,transparent_8px),repeating-linear-gradient(to_bottom,black_0px,black_3px,transparent_3px,transparent_8px)] [-webkit-mask-image:repeating-linear-gradient(to_right,black_0px,black_3px,transparent_3px,transparent_8px),repeating-linear-gradient(to_bottom,black_0px,black_3px,transparent_3px,transparent_8px)] [mask-composite:intersect] [-webkit-mask-composite:source-in]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-40 bg-gradient-to-b from-[#0b1220]/10 to-transparent" />
+      <section className="relative min-h-screen w-full bg-white">
 
-        <main className="relative z-10 mx-auto max-w-7xl space-y-10 px-6 py-14 md:py-16">
+        <main className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+
+          {/* ═══════════════════════════════════════════════
+              FEATURED STORY
+          ═══════════════════════════════════════════════ */}
           {data.latest && (
-            <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+            <section className="mb-16">
+              {/* Section label row */}
+              <div className="mb-6 flex items-center gap-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.45em] text-black">Featured Story</span>
+                <div className="h-px flex-1 bg-black" />
+              </div>
+
               <Link
                 href={`/post/${data.latest.slug.current}`}
-                className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-7 shadow-[0_20px_55px_-28px_rgba(2,6,23,0.35)] transition-transform duration-300 hover:-translate-y-1"
+                className="group grid gap-0 overflow-hidden border border-black md:grid-cols-[1.1fr_0.9fr]"
               >
-                {latestImageUrl && (
-                  <figure className="relative mb-5 overflow-hidden rounded-2xl border border-slate-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={latestImageUrl} alt={getFeaturedImageAlt(data.latest)} className="h-auto w-full object-cover" />
-                  </figure>
+                {/* Image */}
+                {latestImageUrl ? (
+                  <div className="relative aspect-[16/10] overflow-hidden">
+                    <Image
+                      src={latestImageUrl}
+                      alt={getFeaturedImageAlt(data.latest)}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 60vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      priority
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-[16/10] bg-zinc-100" />
                 )}
-                <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[var(--accent)]/25 blur-2xl" />
-                <div className="absolute bottom-0 left-0 h-1.5 w-full bg-gradient-to-r from-[var(--primary-start)] to-[var(--primary-end)]" />
-                <p className="relative text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-                  Featured Story
-                </p>
-                <h2 className="relative mt-4 text-3xl font-black leading-tight text-[var(--text-primary)] md:text-4xl">
-                  {data.latest.title}
-                </h2>
-                <div className="relative mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[var(--primary-start)]">
-                  Read article
-                  <span className="transition-transform duration-200 group-hover:translate-x-1">-&gt;</span>
+
+                {/* Text pane */}
+                <div className="flex flex-col justify-between border-l-0 border-black bg-white p-8 md:border-l lg:p-12">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
+                      {formatDate(data.latest.publishedAt)}
+                    </p>
+                    <h2 className="mt-5 font-serif text-4xl font-black leading-tight tracking-tight text-black xl:text-5xl">
+                      {data.latest.title}
+                    </h2>
+                  </div>
+                  <div className="mt-8 flex items-center gap-3">
+                    <span className="text-[11px] font-black uppercase tracking-[0.3em] text-black transition-all duration-200 group-hover:tracking-[0.5em]">
+                      Read Full Story
+                    </span>
+                    <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </div>
                 </div>
               </Link>
-
-              <aside className="rounded-[1.75rem] border border-slate-200 bg-[var(--surface)]/75 p-6 shadow-[0_16px_45px_-28px_rgba(15,23,42,0.35)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-                  Quick Navigation
-                </p>
-                <h3 className="mt-4 text-2xl font-bold text-[var(--text-primary)]">Explore Categories</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
-                  Jump directly into the topics you care about most.
-                </p>
-                <div className="mt-6 grid gap-3">
-                  {categorySections.map((item) => (
-                    <Link
-                      key={item.title}
-                      href={item.href}
-                      className="group flex items-center justify-between rounded-xl border border-white bg-white px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition-colors duration-200 hover:bg-slate-50"
-                    >
-                      {item.title}
-                      <span className="text-[var(--text-secondary)] transition-transform duration-200 group-hover:translate-x-1">
-                        -&gt;
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </aside>
             </section>
           )}
 
-          <section className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-2xl font-black text-[var(--text-primary)] md:text-3xl">Recent Posts</h2>
-              <Link
-                href="/category/tech"
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--surface)]"
-              >
-                View More
-              </Link>
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {data.posts?.map((post, index) => {
-                const postImageUrl = getFeaturedImageUrl(post, 900, 540)
-
-                return (
-                  <Link
-                    key={post.slug.current}
-                    href={`/post/${post.slug.current}`}
-                    className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_35px_-28px_rgba(2,6,23,0.55)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_25px_50px_-28px_rgba(79,70,229,0.45)]"
-                  >
-                    {postImageUrl && (
-                      <figure className="mb-4 overflow-hidden rounded-xl border border-slate-200">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={postImageUrl} alt={getFeaturedImageAlt(post)} className="h-auto w-full object-cover" />
-                      </figure>
-                    )}
-                    <div className="absolute right-3 top-3 rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-secondary)]">
-                      #{String(index + 1).padStart(2, "0")}
-                    </div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
-                      {formatDate(post.publishedAt)}
-                    </p>
-                    <h3 className="mt-3 text-lg font-bold leading-snug text-[var(--text-primary)]">
-                      {post.title}
-                    </h3>
-                    <p className="mt-4 text-sm text-[var(--text-secondary)]">Tap to read the full analysis.</p>
-                    <div className="mt-5 h-1.5 w-24 rounded-full bg-gradient-to-r from-[var(--primary-start)] to-[var(--primary-end)] transition-all duration-300 group-hover:w-40" />
-                  </Link>
-                )
-              })}
-            </div>
-          </section>
-
-          <section className="space-y-6">
-            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-secondary)]">Magazine Desk</p>
-                <h2 className="mt-2 text-3xl font-black text-[var(--text-primary)]">Category Edition</h2>
+          {/* ═══════════════════════════════════════════════
+              RECENT POSTS — newspaper index list
+          ═══════════════════════════════════════════════ */}
+          {data.posts.length > 0 && (
+            <section className="mb-16">
+              <div className="mb-6 flex items-center gap-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.45em] text-black">Latest Posts</span>
+                <div className="h-px flex-1 bg-black" />
               </div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Weekly Selection</p>
-            </div>
 
-            <div className="grid gap-6 lg:grid-cols-12">
-              <article className="relative overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-[0_18px_44px_-30px_rgba(2,6,23,0.5)] lg:col-span-7">
-                <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--primary-start)] via-[var(--accent)] to-[var(--primary-end)]" />
-                <div className="flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-[var(--primary-start)]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--primary-start)]">
-                    {categorySections[0].title}
-                  </span>
-                  <Link
-                    href={categorySections[0].href}
-                    className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)] hover:text-[var(--primary-start)]"
-                  >
-                    View All
-                  </Link>
-                </div>
-
-                {leadCategoryPost ? (
-                  <>
-                    <Link
-                      href={`/post/${leadCategoryPost.slug.current}`}
-                      className="group mt-5 block border-b border-slate-200 pb-6"
-                    >
-                      {leadCategoryImageUrl && (
-                        <figure className="mb-4 overflow-hidden rounded-xl border border-slate-200">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={leadCategoryImageUrl}
-                            alt={getFeaturedImageAlt(leadCategoryPost)}
-                            className="h-auto w-full object-cover"
-                          />
-                        </figure>
-                      )}
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Lead Analysis</p>
-                      <h3 className="mt-3 font-serif text-3xl font-bold leading-tight text-[var(--text-primary)] transition-colors duration-200 group-hover:text-[var(--primary-start)] md:text-4xl">
-                        {leadCategoryPost.title}
-                      </h3>
-                    </Link>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {categorySections[0].posts.slice(1, 5).map((post, idx) => (
-                        <Link
-                          key={post.slug.current}
-                          href={`/post/${post.slug.current}`}
-                          className="group rounded-xl border border-slate-200 bg-[var(--surface)]/45 px-4 py-3 transition-colors duration-200 hover:bg-[var(--surface)]"
-                        >
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-                            Column {idx + 2}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold leading-snug text-[var(--text-primary)] group-hover:text-[var(--primary-start)]">
-                            {post.title}
-                          </p>
-                        </Link>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="mt-5 rounded-xl border border-slate-200 bg-[var(--surface)]/55 px-4 py-5 text-sm text-[var(--text-secondary)]">
-                    No posts available in this category yet.
-                  </div>
-                )}
-              </article>
-
-              <div className="space-y-6 lg:col-span-5">
-                {categorySections.slice(1).map((section) => {
-                  const sectionLead = section.posts[0]
-                  const sectionLeadImageUrl = getFeaturedImageUrl(sectionLead, 900, 520)
-
+              {/* Top 2 — card with image */}
+              <div className="mb-0 grid border-b border-black md:grid-cols-2">
+                {data.posts.slice(0, 2).map((post, i) => {
+                  const img = getFeaturedImageUrl(post, 900, 540)
                   return (
-                    <article
-                      key={section.title}
-                      className="relative overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_16px_40px_-30px_rgba(2,6,23,0.45)]"
+                    <Link
+                      key={post.slug.current}
+                      href={`/post/${post.slug.current}`}
+                      className={`group flex flex-col border-black p-6 transition-colors duration-150 hover:bg-zinc-50 ${i === 0 ? "border-b border-black md:border-b-0 md:border-r" : ""}`}
                     >
-                      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${section.line}`} />
-                      <div className="flex items-center justify-between gap-3">
-                        <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${section.badge}`}>
-                          {section.title}
-                        </span>
-                        <Link
-                          href={section.href}
-                          className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)] hover:text-[var(--primary-start)]"
-                        >
-                          View All
-                        </Link>
-                      </div>
-
-                      {sectionLead ? (
-                        <>
-                          <Link
-                            href={`/post/${sectionLead.slug.current}`}
-                            className="group mt-4 block border-b border-slate-200 pb-4"
-                          >
-                            {sectionLeadImageUrl && (
-                              <figure className="mb-3 overflow-hidden rounded-lg border border-slate-200">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={sectionLeadImageUrl}
-                                  alt={getFeaturedImageAlt(sectionLead)}
-                                  className="h-auto w-full object-cover"
-                                />
-                              </figure>
-                            )}
-                            <h3 className="font-serif text-2xl font-bold leading-tight text-[var(--text-primary)] transition-colors duration-200 group-hover:text-[var(--primary-start)]">
-                              {sectionLead.title}
-                            </h3>
-                          </Link>
-
-                          <div className="mt-3 space-y-2">
-                            {section.posts.slice(1, 4).map((post, idx) => (
-                              <Link
-                                key={post.slug.current}
-                                href={`/post/${post.slug.current}`}
-                                className="group flex items-start gap-3 rounded-lg px-1.5 py-2 transition-colors duration-200 hover:bg-[var(--surface)]/45"
-                              >
-                                <span className="mt-0.5 min-w-[26px] text-[11px] font-bold text-[var(--text-secondary)]">
-                                  0{idx + 2}
-                                </span>
-                                <p className="text-sm font-semibold leading-snug text-[var(--text-primary)] group-hover:text-[var(--primary-start)]">
-                                  {post.title}
-                                </p>
-                              </Link>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="mt-4 rounded-lg border border-slate-200 bg-[var(--surface)]/55 px-4 py-4 text-sm text-[var(--text-secondary)]">
-                          No posts available in this category yet.
+                      {img && (
+                        <div className="relative mb-5 aspect-[16/9] overflow-hidden">
+                          <Image
+                            src={img}
+                            alt={getFeaturedImageAlt(post)}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
                         </div>
                       )}
-                    </article>
+                      <div className="flex flex-1 flex-col justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">
+                            {formatDate(post.publishedAt)}
+                          </p>
+                          <h3 className="mt-3 font-serif text-2xl font-black leading-tight text-black xl:text-3xl">
+                            {post.title}
+                          </h3>
+                        </div>
+                        <div className="mt-5 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.25em] text-black">
+                          Read
+                          <svg className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </div>
+                      </div>
+                    </Link>
                   )
                 })}
               </div>
-            </div>
+
+              {/* Remaining 4 — index rows */}
+              <div>
+                {data.posts.slice(2).map((post, i) => (
+                  <Link
+                    key={post.slug.current}
+                    href={`/post/${post.slug.current}`}
+                    className="group flex items-baseline justify-between gap-6 border-b border-zinc-200 px-2 py-4 transition-colors duration-150 hover:bg-zinc-50 last:border-b-0"
+                  >
+                    <div className="flex items-baseline gap-5 overflow-hidden">
+                      <span className="shrink-0 font-serif text-4xl font-black leading-none text-zinc-100">
+                        {String(i + 3).padStart(2, "0")}
+                      </span>
+                      <h3 className="truncate font-serif text-lg font-bold text-black">
+                        {post.title}
+                      </h3>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                      {formatDate(post.publishedAt)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ═══════════════════════════════════════════════
+              CATEGORY EDITIONS
+          ═══════════════════════════════════════════════ */}
+          <section className="space-y-14">
+            {categorySections.map((section) => {
+              const [lead, ...rest] = section.posts
+              const leadImg = getFeaturedImageUrl(lead, 1200, 700)
+              return (
+                <div key={section.title} className="border-t-2 border-black pt-8">
+                  {/* Category row header */}
+                  <div className="mb-8 flex items-end justify-between gap-4">
+                    <h2 className="font-serif text-5xl font-black uppercase leading-none tracking-tight text-black md:text-7xl">
+                      {section.title}
+                    </h2>
+                    <Link
+                      href={section.href}
+                      className="group flex shrink-0 items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 transition-colors duration-150 hover:text-black"
+                    >
+                      All {section.title}
+                      <svg className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </Link>
+                  </div>
+
+                  {lead ? (
+                    <div className="grid gap-0 border border-black md:grid-cols-[1.4fr_0.6fr]">
+                      {/* Lead post */}
+                      <Link
+                        href={`/post/${lead.slug.current}`}
+                        className="group border-b border-black md:border-b-0 md:border-r"
+                      >
+                        {leadImg && (
+                          <div className="relative aspect-[16/9] overflow-hidden">
+                            <Image
+                              src={leadImg}
+                              alt={getFeaturedImageAlt(lead)}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 60vw"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          </div>
+                        )}
+                        <div className="p-6">
+                          <h3 className="font-serif text-2xl font-black leading-tight text-black md:text-3xl">
+                            {lead.title}
+                          </h3>
+                          <div className="mt-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.25em] text-black">
+                            Read
+                            <svg className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                          </div>
+                        </div>
+                      </Link>
+
+                      {/* Sidebar list */}
+                      <div className="flex flex-col divide-y divide-zinc-200">
+                        {(rest.length > 0 ? rest : Array(2).fill(null)).map((post, idx) =>
+                          post ? (
+                            <Link
+                              key={post.slug.current}
+                              href={`/post/${post.slug.current}`}
+                              className="group flex flex-1 flex-col justify-between p-5 transition-colors duration-150 hover:bg-zinc-50"
+                            >
+                              <span className="font-serif text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300">
+                                0{idx + 2}
+                              </span>
+                              <p className="mt-2 font-serif text-base font-bold leading-snug text-black group-hover:underline">
+                                {post.title}
+                              </p>
+                            </Link>
+                          ) : (
+                            <div key={idx} className="flex flex-1 items-center p-5 text-xs text-zinc-300">—</div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-400">No posts yet in this category.</p>
+                  )}
+                </div>
+              )
+            })}
           </section>
+
         </main>
       </section>
     </>

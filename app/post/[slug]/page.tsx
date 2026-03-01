@@ -1,10 +1,23 @@
-import { client } from "@/lib/sanity"
+﻿import { client } from "@/lib/sanity"
+import Image from "next/image"
 import { PortableText } from "@portabletext/react"
 import type { PortableTextBlock } from "@portabletext/types"
 import type { PortableTextComponents } from "@portabletext/react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { urlFor } from "@/lib/image"
+
+export const revalidate = 60
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mohammadsadi.com"
+
+/** Escape JSON for safe inline script injection (prevents XSS via </script>) */
+function escapeJson(obj: object): string {
+  return JSON.stringify(obj)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+}
 
 type Category = {
   _id: string
@@ -34,6 +47,7 @@ type Post = {
   title: string
   body?: PortableTextBlock[]
   publishedAt?: string
+  _createdAt?: string
   featuredImage?: SanityImage
   categories?: Category[]
   author?: Author
@@ -55,10 +69,10 @@ type Heading = {
 }
 
 const formatDate = (value?: string) => {
-  if (!value) return "Recently published"
+  if (!value) return null
 
   return new Intl.DateTimeFormat("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   }).format(new Date(value))
@@ -132,7 +146,11 @@ async function getPost(slug: string) {
       title,
       body,
       publishedAt,
-      "featuredImage": coalesce(featuredImage, mainImage, coverImage, heroImage, image),
+      _createdAt,
+      "featuredImage": coalesce(featuredImage, mainImage, coverImage, heroImage, image){
+        ...,
+        asset->{_id, url, metadata}
+      },
       categories[]->{
         _id,
         title,
@@ -155,18 +173,34 @@ async function getPost(slug: string) {
 async function getRelatedPosts(categoryIds: string[], currentId: string) {
   if (!categoryIds.length) return []
 
-  return await client.fetch<RelatedPost[]>(
-    `*[
-      _type == "post" &&
-      _id != $currentId &&
-      count((categories[]._ref)[@ in $categoryIds]) > 0
-    ][0..3]{
-      title,
-      slug,
-      publishedAt
-    }`,
-    { categoryIds, currentId }
-  )
+  try {
+    return await client.fetch<RelatedPost[]>(
+      `*[
+        _type == "post" &&
+        _id != $currentId &&
+        count((categories[]._ref)[@ in $categoryIds]) > 0
+      ] | order(publishedAt desc) [0..3]{
+        title,
+        slug,
+        publishedAt
+      }`,
+      { categoryIds, currentId }
+    )
+  } catch (err) {
+    console.error("[getRelatedPosts] Sanity fetch failed:", err)
+    return []
+  }
+}
+
+export async function generateStaticParams() {
+  try {
+    const posts = await client.fetch<{ slug: string }[]>(
+      `*[_type == "post"]{"slug": slug.current}`
+    )
+    return posts.map(({ slug }) => ({ slug }))
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({
@@ -179,16 +213,56 @@ export async function generateMetadata({
 
   if (!post) return {}
 
+  const postUrl = `${BASE_URL}/post/${slug}`
+  const categoryLabel = post.categories?.[0]?.title ?? ""
+  const ogImageUrl = post.featuredImage
+    ? urlFor(post.featuredImage).width(1200).height(630).url()
+    : `${BASE_URL}/api/og?title=${encodeURIComponent(post.title)}${categoryLabel ? `&label=${encodeURIComponent(categoryLabel)}` : ""}` 
+
+  const description = (() => {
+    if (!post.body) return `Read: ${post.title}`
+    const text = post.body
+      .filter(
+        (b): b is PortableTextBlock =>
+          "style" in b && b.style === "normal" && "children" in b && Array.isArray(b.children)
+      )
+      .slice(0, 3)
+      .map((b) =>
+        (b.children as { text?: string }[])
+          .map((c) => (typeof c.text === "string" ? c.text : ""))
+          .join("")
+      )
+      .join(" ")
+      .slice(0, 160)
+      .trim()
+    return text || `Read: ${post.title}`
+  })()
+
   return {
-    title: post.title,
-    description: `Read: ${post.title}`,
+    title: `${post.title} - Mohammad Sadi`,
+    description,
+    keywords: post.categories?.map((c) => c.title) ?? [],
+    authors: post.author?.name ? [{ name: post.author.name }] : [{ name: "Mohammad Sadi" }],
+    alternates: { canonical: postUrl },
     openGraph: {
       title: post.title,
-      description: `Read: ${post.title}`,
+      description,
       type: "article",
+      url: postUrl,
+      siteName: "Mohammad Sadi",
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: post.title }],
+      publishedTime: post.publishedAt ?? post._createdAt,
+      authors: post.author?.name ? [post.author.name] : [],
+      tags: post.categories?.map((c) => c.title),
     },
-  }
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description,
+      images: [ogImageUrl],
+    },
 }
+  }
 
 export default async function PostPage({
   params,
@@ -200,9 +274,12 @@ export default async function PostPage({
 
   if (!post) return notFound()
 
-  const readingMinutes = estimateReadingMinutes(post.body)
   const categoryIds = post.categories?.map((category) => category._id) ?? []
-  const related = await getRelatedPosts(categoryIds, post._id)
+  const [related] = await Promise.all([
+    getRelatedPosts(categoryIds, post._id),
+  ])
+
+  const readingMinutes = estimateReadingMinutes(post.body)
   const headings = buildHeadings(post.body)
   const headingIdByKey = new Map(headings.map((item) => [item.key, item.id]))
 
@@ -216,7 +293,7 @@ export default async function PostPage({
   const authorImageUrl = post.author?.image ? urlFor(post.author.image).width(120).height(120).url() : null
   const featuredImageUrl = post.featuredImage ? urlFor(post.featuredImage).width(1800).height(1000).url() : null
   const featuredImageAlt = post.featuredImage?.alt || post.title
-  const postUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://mohammadsadi.com"}/post/${slug}`
+  const postUrl = `${BASE_URL}/post/${slug}`
   const encodedTitle = encodeURIComponent(post.title)
   const encodedUrl = encodeURIComponent(postUrl)
   const shareLinks = [
@@ -231,7 +308,7 @@ export default async function PostPage({
       h2: ({ children, value }) => {
         const id = value?._key ? headingIdByKey.get(value._key) : undefined
         return (
-          <h2 id={id} className="mt-12 scroll-mt-28 border-t border-slate-200 pt-8 font-serif text-3xl font-bold text-[var(--text-primary)]">
+          <h2 id={id} className="mt-14 scroll-mt-28 font-serif text-[1.9rem] font-black leading-tight tracking-tight text-zinc-950">
             {children}
           </h2>
         )
@@ -239,241 +316,335 @@ export default async function PostPage({
       h3: ({ children, value }) => {
         const id = value?._key ? headingIdByKey.get(value._key) : undefined
         return (
-          <h3 id={id} className="mt-8 scroll-mt-28 font-serif text-2xl font-semibold text-[var(--text-primary)]">
+          <h3 id={id} className="mt-10 scroll-mt-28 font-serif text-2xl font-bold leading-snug text-zinc-900">
             {children}
           </h3>
         )
       },
+      blockquote: ({ children }) => (
+        <blockquote className="relative my-12 border-l-4 border-zinc-950 pl-8">
+          <span className="absolute -left-2 -top-4 font-serif text-7xl font-black leading-none text-zinc-200 select-none">&ldquo;</span>
+          <p className="relative font-serif text-2xl font-bold italic leading-relaxed text-zinc-800">{children}</p>
+        </blockquote>
+      ),
     },
     marks: {
       link: ({ children, value }) => {
         const href = typeof value?.href === "string" ? value.href : "#"
         const external = /^https?:\/\//.test(href)
         return (
-          <a href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer noopener" : undefined}>
+          <a href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer noopener" : undefined} className="border-b-2 border-zinc-950 font-semibold text-zinc-950 transition-colors hover:border-transparent hover:text-zinc-500">
             {children}
           </a>
         )
       },
       code: ({ children }) => (
-        <code className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[0.92em] font-semibold text-slate-800">{children}</code>
+        <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[0.88em] font-semibold text-zinc-800">{children}</code>
       ),
     },
   }
+
+  const articleDescription = (() => {
+    if (!post.body) return post.title
+    return post.body
+      .filter((b): b is PortableTextBlock =>
+        "style" in b && b.style === "normal" && "children" in b && Array.isArray(b.children)
+      )
+      .slice(0, 2)
+      .map((b) => (b.children as { text?: string }[]).map((c) => c.text ?? "").join(""))
+      .join(" ")
+      .slice(0, 200)
+      .trim() || post.title
+  })()
+
+  const wordCount = (() => {
+    if (!post.body) return undefined
+    const text = post.body
+      .map((b) =>
+        "children" in b && Array.isArray(b.children)
+          ? (b.children as { text?: string }[]).map((c) => c.text ?? "").join(" ")
+          : ""
+      )
+      .join(" ")
+    return text.trim().split(/\s+/).filter(Boolean).length || undefined
+  })()
 
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.title,
-    datePublished: post.publishedAt,
+    url: postUrl,
+    datePublished: post.publishedAt ?? post._createdAt,
+    dateModified: post.publishedAt ?? post._createdAt,
+    description: articleDescription,
     image: featuredImageUrl ? [featuredImageUrl] : undefined,
+    inLanguage: "en-US",
+    ...(wordCount ? { wordCount } : {}),
+    ...(post.categories?.length ? { articleSection: post.categories[0].title, keywords: post.categories.map((c) => c.title).join(", ") } : {}),
     author: {
       "@type": "Person",
-      name: post.author?.name || "Sadi",
+      name: post.author?.name || "Mohammad Sadi",
+      url: BASE_URL,
+      sameAs: [
+        "https://x.com/mohammadsadi",
+        "https://linkedin.com/in/mohammadsadi",
+      ],
     },
+    publisher: {
+      "@type": "Organization",
+      name: "Mohammad Sadi",
+      url: BASE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: `${BASE_URL}/og-default.png`,
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": postUrl,
+    },
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Mohammad Sadi",
+      url: BASE_URL,
+    },
+  }
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+      ...(post.categories?.[0]
+        ? [{ "@type": "ListItem", position: 2, name: post.categories[0].title, item: `${BASE_URL}/category/${post.categories[0].slug.current}` }]
+        : []),
+      { "@type": "ListItem", position: post.categories?.length ? 3 : 2, name: post.title, item: postUrl },
+    ],
   }
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(articleSchema),
-        }}
+        dangerouslySetInnerHTML={{ __html: escapeJson(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: escapeJson(breadcrumbSchema) }}
       />
 
-      <section className="relative isolate overflow-hidden bg-[#0b1220] text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(79,70,229,0.55),transparent_46%),radial-gradient(circle_at_80%_10%,rgba(6,182,212,0.35),transparent_36%),linear-gradient(120deg,#0b1220_0%,#111827_45%,#0f172a_100%)]" />
-        <div className="absolute inset-0 opacity-20 [background-image:linear-gradient(to_right,rgba(241,245,249,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(241,245,249,0.15)_1px,transparent_1px)] [background-size:46px_46px]" />
-        <div className="pointer-events-none absolute -right-24 top-8 h-56 w-56 rounded-full bg-[var(--accent)]/30 blur-3xl" />
+      {/* Dark cinematic masthead */}
+      <header className="bg-zinc-950 pb-16 pt-10">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
 
-        <div className="relative mx-auto max-w-6xl px-6 py-14 md:py-20">
-          <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wider text-slate-200">
-            <Link href="/" className="rounded-full border border-white/20 bg-white/10 px-3 py-1 transition-colors duration-200 hover:bg-white/20">
-              Home
+          {/* Top nav row */}
+          <div className="mb-10 flex items-center justify-between">
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 transition-colors hover:text-white"
+            >
+              <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M8 1L3 6l5 5" />
+              </svg>
+              Back
             </Link>
-            <span>/</span>
-            <span>Post</span>
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-2">
-            {post.categories?.map((category) => (
-              <Link
-                key={category.slug.current}
-                href={`/category/${category.slug.current}`}
-                className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-100 transition-colors duration-200 hover:bg-white/20"
-              >
-                {category.title}
-              </Link>
-            ))}
-          </div>
-
-          <h1 className="mt-6 font-serif text-4xl font-bold leading-tight md:text-6xl">{post.title}</h1>
-
-          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-200">
-            <span>{formatDate(post.publishedAt)}</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-            <span>{readingMinutes} min read</span>
-            {post.author?.name && (
-              <>
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                <span>{post.author.name}</span>
-              </>
+            {post.categories && post.categories.length > 0 && (
+              <div className="flex gap-2">
+                {post.categories.map((cat) => (
+                  <Link
+                    key={cat.slug.current}
+                    href={`/category/${cat.slug.current}`}
+                    className="border border-zinc-700 px-3 py-1 text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400 transition-colors hover:border-white hover:text-white"
+                  >
+                    {cat.title}
+                  </Link>
+                ))}
+              </div>
             )}
+          </div>
+
+          {/* Title */}
+          <h1 className="font-serif text-[clamp(2.2rem,5.5vw,4.2rem)] font-black leading-[1.05] tracking-tight text-white">
+            {post.title}
+          </h1>
+
+          {/* Meta row */}
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-zinc-800 pt-6 text-[11px] font-bold uppercase tracking-[0.3em] text-zinc-500">
+            {post.author?.name && (
+              <span className="text-zinc-300">{post.author.name}</span>
+            )}
+            <span>{formatDate(post.publishedAt ?? post._createdAt)}</span>
+            <span>{readingMinutes} min read</span>
           </div>
         </div>
-      </section>
+      </header>
 
-      <section className="relative w-full overflow-hidden bg-[var(--background)]">
-        <div className="absolute inset-0 z-0 opacity-80 [background-image:linear-gradient(to_right,#e7e5e4_1px,transparent_1px),linear-gradient(to_bottom,#e7e5e4_1px,transparent_1px)] [background-size:20px_20px] [mask-image:repeating-linear-gradient(to_right,black_0px,black_3px,transparent_3px,transparent_8px),repeating-linear-gradient(to_bottom,black_0px,black_3px,transparent_3px,transparent_8px)] [-webkit-mask-image:repeating-linear-gradient(to_right,black_0px,black_3px,transparent_3px,transparent_8px),repeating-linear-gradient(to_bottom,black_0px,black_3px,transparent_3px,transparent_8px)] [mask-composite:intersect] [-webkit-mask-composite:source-in]" />
+      {/* Featured image */}
+      {featuredImageUrl && (
+        <div className="bg-zinc-950">
+          <div className="mx-auto max-w-5xl">
+            <div className="relative aspect-[16/9] w-full overflow-hidden">
+              <Image
+                src={featuredImageUrl}
+                alt={featuredImageAlt}
+                fill
+                priority
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
-        <div className="relative z-10 mx-auto grid max-w-7xl gap-8 px-6 py-12 md:py-14 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <article className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-35px_rgba(2,6,23,0.5)] md:p-10">
-            {featuredImageUrl && (
-              <figure className="mb-8 overflow-hidden rounded-2xl border border-slate-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={featuredImageUrl} alt={featuredImageAlt} className="h-auto w-full object-cover" />
-              </figure>
-            )}
+      {/* Body */}
+      <div className="bg-white">
+        <div className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
 
-            <div className="prose prose-slate max-w-none text-[1.04rem] leading-8 prose-headings:font-serif prose-headings:text-[var(--text-primary)] prose-p:text-[var(--text-secondary)] prose-a:font-semibold prose-a:text-[var(--primary-start)] prose-a:no-underline hover:prose-a:underline prose-strong:text-[var(--text-primary)] prose-li:text-[var(--text-secondary)] prose-ol:marker:text-[var(--primary-start)] prose-ul:marker:text-[var(--primary-start)]">
+          {/* Sticky share bar  left of reading column (xl+) */}
+          <div className="absolute -left-20 top-16 hidden xl:block">
+            <div className="sticky top-28 flex flex-col items-center gap-3">
+              <span
+                className="mb-1 text-[9px] font-black uppercase tracking-[0.45em] text-zinc-300"
+                style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
+              >
+                Share
+              </span>
+              {shareLinks.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Share on ${item.label}`}
+                  className="flex h-9 w-9 items-center justify-center border border-zinc-200 text-[10px] font-black uppercase text-zinc-400 transition-all hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+                >
+                  {item.label.charAt(0)}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Article */}
+          <article>
+            <div className="prose prose-zinc max-w-none text-[1.08rem] leading-[1.9] prose-p:text-zinc-700 prose-p:my-6 prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-zinc-950 prose-h2:text-[1.9rem] prose-h2:font-black prose-h2:mt-14 prose-h2:mb-4 prose-h2:scroll-mt-28 prose-h3:text-[1.4rem] prose-h3:font-bold prose-h3:mt-10 prose-h3:mb-3 prose-h3:scroll-mt-28 prose-strong:text-zinc-950 prose-strong:font-bold prose-li:text-zinc-700 prose-li:my-1 prose-ul:my-6 prose-ol:my-6 prose-blockquote:not-italic prose-blockquote:border-none prose-blockquote:p-0 prose-blockquote:m-0 prose-code:text-[0.88em] prose-code:font-mono prose-code:font-semibold prose-code:text-zinc-800 prose-code:bg-zinc-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-a:text-zinc-950 prose-a:font-semibold prose-a:no-underline hover:prose-a:text-zinc-500 prose-img:border prose-img:border-zinc-100">
               <PortableText value={post.body ?? []} components={portableComponents} />
             </div>
 
-            {related.length > 0 && (
-              <section className="mt-12 border-t border-slate-200 pt-8">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-2xl font-black text-[var(--text-primary)]">Related Articles</h3>
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
-                    Continue reading
-                  </span>
-                </div>
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {related.map((item) => (
-                    <Link
-                      key={item.slug.current}
-                      href={`/post/${item.slug.current}`}
-                      className="group rounded-xl border border-slate-200 bg-[var(--surface)]/45 p-4 transition-colors duration-200 hover:bg-[var(--surface)]"
-                    >
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
-                        {formatDate(item.publishedAt)}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold leading-snug text-[var(--text-primary)] group-hover:text-[var(--primary-start)]">
-                        {item.title}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
-              </section>
+            {/* Mobile share */}
+            <div className="mt-12 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-8 xl:hidden">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Share</span>
+              {shareLinks.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="border border-zinc-200 px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 transition-all hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+
+            {/* Tags */}
+            {post.categories && post.categories.length > 0 && (
+              <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-8">
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Filed under</span>
+                {post.categories.map((cat) => (
+                  <Link
+                    key={cat.slug.current}
+                    href={`/category/${cat.slug.current}`}
+                    className="bg-zinc-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 transition-colors hover:bg-zinc-950 hover:text-white"
+                  >
+                    {cat.title}
+                  </Link>
+                ))}
+              </div>
             )}
           </article>
 
-          <aside className="space-y-6 lg:sticky lg:top-28 lg:self-start">
-            {headings.length > 0 && (
-              <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(2,6,23,0.45)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">On this page</p>
-                <nav aria-label="Table of contents" className="mt-4 space-y-2">
-                  {headings.map((item) => (
-                    <a
-                      key={item.id}
-                      href={`#${item.id}`}
-                      className={`block rounded-lg px-2 py-1.5 text-sm transition-colors duration-200 hover:bg-[var(--surface)] hover:text-[var(--primary-start)] ${
-                        item.level === 3 ? "ml-3 text-[var(--text-secondary)]" : "font-semibold text-[var(--text-primary)]"
-                      }`}
-                    >
-                      {item.text}
-                    </a>
-                  ))}
-                </nav>
-              </section>
-            )}
-
-            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(2,6,23,0.45)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Share</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {shareLinks.map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-full border border-slate-200 bg-[var(--surface)] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] transition-colors duration-200 hover:bg-slate-200"
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </div>
-              <a
-                href={postUrl}
-                className="mt-4 block break-all rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-[var(--text-secondary)]"
-              >
-                {postUrl}
-              </a>
-            </section>
-
-            {post.author && (
-              <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(2,6,23,0.45)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Author</p>
-                <div className="mt-4 flex items-center gap-3">
-                  {authorImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={authorImageUrl} alt={post.author.name || "Author"} className="h-14 w-14 rounded-full object-cover" />
-                  ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--surface)] text-lg font-bold text-[var(--text-primary)]">
-                      {(post.author.name || "S").charAt(0)}
+          {/* Author card */}
+          {post.author && (
+            <div className="mt-16 flex gap-0 border border-zinc-200">
+              <div className="w-1.5 flex-shrink-0 bg-zinc-950" />
+              <div className="flex flex-col gap-4 p-8 sm:flex-row sm:items-start">
+                {authorImageUrl ? (
+                  <Image
+                    src={authorImageUrl}
+                    alt={post.author.name || "Author"}
+                    width={80}
+                    height={80}
+                    className="h-16 w-16 flex-shrink-0 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center bg-zinc-950 font-serif text-2xl font-black text-white">
+                    {(post.author.name || "S").charAt(0)}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Written by</p>
+                  <p className="mt-1 font-serif text-2xl font-black text-zinc-950">{post.author.name || "Sadi"}</p>
+                  {post.author.bio && (
+                    <div className="mt-3 text-sm leading-relaxed text-zinc-500">
+                      <PortableText value={post.author.bio} />
                     </div>
                   )}
-                  <div>
-                    <p className="text-base font-bold text-[var(--text-primary)]">{post.author.name || "Sadi"}</p>
-                    <p className="text-xs uppercase tracking-wider text-[var(--text-secondary)]">Contributor</p>
-                  </div>
+                  {authorLinks.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {authorLinks.map((item) => (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="border border-zinc-300 px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 transition-colors hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+                        >
+                          {item.label}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
-
-                {post.author.bio && (
-                  <div className="mt-4 prose prose-sm max-w-none prose-p:text-[var(--text-secondary)]">
-                    <PortableText value={post.author.bio} />
-                  </div>
-                )}
-
-                {authorLinks.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {authorLinks.map((item) => (
-                      <a
-                        key={item.label}
-                        href={item.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-full border border-slate-200 bg-[var(--surface)] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] transition-colors duration-200 hover:bg-slate-200"
-                      >
-                        {item.label}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
-            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-30px_rgba(2,6,23,0.45)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">Filed Under</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {post.categories?.length ? (
-                  post.categories.map((category) => (
-                    <Link
-                      key={category.slug.current}
-                      href={`/category/${category.slug.current}`}
-                      className="rounded-full bg-[var(--surface)] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] transition-colors duration-200 hover:bg-slate-200"
-                    >
-                      {category.title}
-                    </Link>
-                  ))
-                ) : (
-                  <p className="text-sm text-[var(--text-secondary)]">No categories listed.</p>
-                )}
               </div>
-            </section>
-          </aside>
+            </div>
+          )}
         </div>
-      </section>
+
+        {/* Related posts */}
+        {related.length > 0 && (
+          <div className="border-t border-zinc-100 bg-zinc-50 py-16">
+            <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+              <div className="mb-10 flex items-center gap-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-950">More to Read</span>
+                <div className="h-px flex-1 bg-zinc-200" />
+              </div>
+              <div className="grid gap-px border border-zinc-200 bg-zinc-200 sm:grid-cols-2 lg:grid-cols-3">
+                {related.map((item) => (
+                  <Link
+                    key={item.slug.current}
+                    href={`/post/${item.slug.current}`}
+                    className="group block bg-white p-7 transition-colors hover:bg-zinc-50"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">
+                      {formatDate(item.publishedAt ?? "")}
+                    </p>
+                    <h4 className="mt-3 font-serif text-lg font-black leading-snug tracking-tight text-zinc-950 group-hover:underline">
+                      {item.title}
+                    </h4>
+                    <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 transition-colors group-hover:text-zinc-950">
+                      Read
+                      <svg className="h-2.5 w-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M2 6h8M6 2l4 4-4 4" />
+                      </svg>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   )
 }
