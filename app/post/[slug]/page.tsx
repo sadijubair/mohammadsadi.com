@@ -5,6 +5,7 @@ import type { PortableTextBlock } from "@portabletext/types"
 import type { PortableTextComponents } from "@portabletext/react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { ChevronLeft, ArrowRight, Twitter, Linkedin, Facebook, Mail } from "lucide-react"
 import { urlFor } from "@/lib/image"
 
 export const revalidate = 60
@@ -297,10 +298,10 @@ export default async function PostPage({
   const encodedTitle = encodeURIComponent(post.title)
   const encodedUrl = encodeURIComponent(postUrl)
   const shareLinks = [
-    { label: "X", href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}` },
-    { label: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}` },
-    { label: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}` },
-    { label: "Email", href: `mailto:?subject=${encodedTitle}&body=${encodeURIComponent(`${post.title}\n\n${postUrl}`)}` },
+    { label: "X", href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`, icon: <Twitter className="h-3.5 w-3.5" /> },
+    { label: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, icon: <Linkedin className="h-3.5 w-3.5" /> },
+    { label: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, icon: <Facebook className="h-3.5 w-3.5" /> },
+    { label: "Email", href: `mailto:?subject=${encodedTitle}&body=${encodeURIComponent(`${post.title}\n\n${postUrl}`)}`, icon: <Mail className="h-3.5 w-3.5" /> },
   ]
 
   const portableComponents: PortableTextComponents = {
@@ -308,7 +309,7 @@ export default async function PostPage({
       h2: ({ children, value }) => {
         const id = value?._key ? headingIdByKey.get(value._key) : undefined
         return (
-          <h2 id={id} className="mt-14 scroll-mt-28 font-serif text-[1.9rem] font-black leading-tight tracking-tight text-zinc-950">
+          <h2 id={id} className="mt-14 scroll-mt-28 font-serif text-[1.9rem] font-black leading-tight tracking-tight text-foreground">
             {children}
           </h2>
         )
@@ -316,15 +317,15 @@ export default async function PostPage({
       h3: ({ children, value }) => {
         const id = value?._key ? headingIdByKey.get(value._key) : undefined
         return (
-          <h3 id={id} className="mt-10 scroll-mt-28 font-serif text-2xl font-bold leading-snug text-zinc-900">
+          <h3 id={id} className="mt-10 scroll-mt-28 font-serif text-2xl font-bold leading-snug text-foreground">
             {children}
           </h3>
         )
       },
       blockquote: ({ children }) => (
-        <blockquote className="relative my-12 border-l-4 border-zinc-950 pl-8">
-          <span className="absolute -left-2 -top-4 font-serif text-7xl font-black leading-none text-zinc-200 select-none">&ldquo;</span>
-          <p className="relative font-serif text-2xl font-bold italic leading-relaxed text-zinc-800">{children}</p>
+        <blockquote className="relative my-12 border-l-4 border-primary pl-8">
+          <span className="absolute -left-2 -top-4 font-serif text-7xl font-black leading-none text-border select-none">&ldquo;</span>
+          <p className="relative font-serif text-2xl font-bold italic leading-relaxed text-foreground">{children}</p>
         </blockquote>
       ),
     },
@@ -333,13 +334,13 @@ export default async function PostPage({
         const href = typeof value?.href === "string" ? value.href : "#"
         const external = /^https?:\/\//.test(href)
         return (
-          <a href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer noopener" : undefined} className="border-b-2 border-zinc-950 font-semibold text-zinc-950 transition-colors hover:border-transparent hover:text-zinc-500">
+          <a href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer noopener" : undefined} className="border-b-2 border-primary font-semibold text-primary transition-colors hover:border-transparent hover:text-primary/70">  
             {children}
           </a>
         )
       },
       code: ({ children }) => (
-        <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[0.88em] font-semibold text-zinc-800">{children}</code>
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.88em] font-semibold text-foreground">{children}</code>
       ),
     },
   }
@@ -433,19 +434,17 @@ export default async function PostPage({
         dangerouslySetInnerHTML={{ __html: escapeJson(breadcrumbSchema) }}
       />
 
-      {/* Dark cinematic masthead */}
-      <header className="bg-zinc-950 pb-16 pt-10">
+      {/* Post masthead */}
+      <header className="border-b border-border bg-card pb-14 pt-10">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
 
           {/* Top nav row */}
           <div className="mb-10 flex items-center justify-between">
             <Link
               href="/"
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 transition-colors hover:text-white"
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground transition-colors hover:text-foreground"
             >
-              <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M8 1L3 6l5 5" />
-              </svg>
+              <ChevronLeft className="h-3 w-3" />
               Back
             </Link>
             {post.categories && post.categories.length > 0 && (
@@ -454,7 +453,7 @@ export default async function PostPage({
                   <Link
                     key={cat.slug.current}
                     href={`/category/${cat.slug.current}`}
-                    className="border border-zinc-700 px-3 py-1 text-[10px] font-black uppercase tracking-[0.35em] text-zinc-400 transition-colors hover:border-white hover:text-white"
+                    className="rounded-full border border-border px-3 py-1 text-[10px] font-black uppercase tracking-[0.35em] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                   >
                     {cat.title}
                   </Link>
@@ -464,14 +463,14 @@ export default async function PostPage({
           </div>
 
           {/* Title */}
-          <h1 className="font-serif text-[clamp(2.2rem,5.5vw,4.2rem)] font-black leading-[1.05] tracking-tight text-white">
+          <h1 className="text-[clamp(2rem,5.5vw,3.8rem)] font-black leading-[1.07] tracking-tight text-card-foreground">
             {post.title}
           </h1>
 
           {/* Meta row */}
-          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-zinc-800 pt-6 text-[11px] font-bold uppercase tracking-[0.3em] text-zinc-500">
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-6 text-[11px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
             {post.author?.name && (
-              <span className="text-zinc-300">{post.author.name}</span>
+              <span className="text-foreground">{post.author.name}</span>
             )}
             <span>{formatDate(post.publishedAt ?? post._createdAt)}</span>
             <span>{readingMinutes} min read</span>
@@ -481,7 +480,7 @@ export default async function PostPage({
 
       {/* Featured image */}
       {featuredImageUrl && (
-        <div className="bg-zinc-950">
+        <div className="bg-card">
           <div className="mx-auto max-w-5xl">
             <div className="relative aspect-[16/9] w-full overflow-hidden">
               <Image
@@ -498,14 +497,14 @@ export default async function PostPage({
       )}
 
       {/* Body */}
-      <div className="bg-white">
+      <div className="bg-background">
         <div className="relative mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
 
           {/* Sticky share bar  left of reading column (xl+) */}
           <div className="absolute -left-20 top-16 hidden xl:block">
             <div className="sticky top-28 flex flex-col items-center gap-3">
               <span
-                className="mb-1 text-[9px] font-black uppercase tracking-[0.45em] text-zinc-300"
+                className="mb-1 text-[9px] font-black uppercase tracking-[0.45em] text-muted-foreground"
                 style={{ writingMode: "vertical-rl", textOrientation: "mixed", transform: "rotate(180deg)" }}
               >
                 Share
@@ -517,9 +516,9 @@ export default async function PostPage({
                   target="_blank"
                   rel="noreferrer"
                   aria-label={`Share on ${item.label}`}
-                  className="flex h-9 w-9 items-center justify-center border border-zinc-200 text-[10px] font-black uppercase text-zinc-400 transition-all hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded border border-border text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground"
                 >
-                  {item.label.charAt(0)}
+                  {item.icon}
                 </a>
               ))}
             </div>
@@ -527,21 +526,22 @@ export default async function PostPage({
 
           {/* Article */}
           <article>
-            <div className="prose prose-zinc max-w-none text-[1.08rem] leading-[1.9] prose-p:text-zinc-700 prose-p:my-6 prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-zinc-950 prose-h2:text-[1.9rem] prose-h2:font-black prose-h2:mt-14 prose-h2:mb-4 prose-h2:scroll-mt-28 prose-h3:text-[1.4rem] prose-h3:font-bold prose-h3:mt-10 prose-h3:mb-3 prose-h3:scroll-mt-28 prose-strong:text-zinc-950 prose-strong:font-bold prose-li:text-zinc-700 prose-li:my-1 prose-ul:my-6 prose-ol:my-6 prose-blockquote:not-italic prose-blockquote:border-none prose-blockquote:p-0 prose-blockquote:m-0 prose-code:text-[0.88em] prose-code:font-mono prose-code:font-semibold prose-code:text-zinc-800 prose-code:bg-zinc-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-a:text-zinc-950 prose-a:font-semibold prose-a:no-underline hover:prose-a:text-zinc-500 prose-img:border prose-img:border-zinc-100">
+            <div className="prose max-w-none text-[1.08rem] leading-[1.9] prose-p:text-muted-foreground prose-p:my-6 prose-headings:tracking-tight prose-headings:text-foreground prose-h2:text-[1.9rem] prose-h2:font-black prose-h2:mt-14 prose-h2:mb-4 prose-h2:scroll-mt-28 prose-h3:text-[1.4rem] prose-h3:font-bold prose-h3:mt-10 prose-h3:mb-3 prose-h3:scroll-mt-28 prose-strong:text-foreground prose-strong:font-bold prose-li:text-muted-foreground prose-li:my-1 prose-ul:my-6 prose-ol:my-6 prose-blockquote:not-italic prose-blockquote:border-none prose-blockquote:p-0 prose-blockquote:m-0 prose-code:text-[0.88em] prose-code:font-mono prose-code:font-semibold prose-code:text-foreground prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-a:font-semibold prose-a:no-underline prose-img:border prose-img:border-border">
               <PortableText value={post.body ?? []} components={portableComponents} />
             </div>
 
             {/* Mobile share */}
-            <div className="mt-12 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-8 xl:hidden">
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Share</span>
+            <div className="mt-12 flex flex-wrap items-center gap-3 border-t border-border pt-8 xl:hidden">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Share</span>
               {shareLinks.map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="border border-zinc-200 px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 transition-all hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+                  className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground"
                 >
+                  {item.icon}
                   {item.label}
                 </a>
               ))}
@@ -549,13 +549,13 @@ export default async function PostPage({
 
             {/* Tags */}
             {post.categories && post.categories.length > 0 && (
-              <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-8">
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Filed under</span>
+              <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-border pt-8">
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Filed under</span>
                 {post.categories.map((cat) => (
                   <Link
                     key={cat.slug.current}
                     href={`/category/${cat.slug.current}`}
-                    className="bg-zinc-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 transition-colors hover:bg-zinc-950 hover:text-white"
+                    className="rounded bg-muted px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
                   >
                     {cat.title}
                   </Link>
@@ -566,8 +566,8 @@ export default async function PostPage({
 
           {/* Author card */}
           {post.author && (
-            <div className="mt-16 flex gap-0 border border-zinc-200">
-              <div className="w-1.5 flex-shrink-0 bg-zinc-950" />
+            <div className="mt-16 flex gap-0 overflow-hidden rounded-lg border border-border">
+              <div className="w-1.5 flex-shrink-0 bg-primary" />
               <div className="flex flex-col gap-4 p-8 sm:flex-row sm:items-start">
                 {authorImageUrl ? (
                   <Image
@@ -575,18 +575,18 @@ export default async function PostPage({
                     alt={post.author.name || "Author"}
                     width={80}
                     height={80}
-                    className="h-16 w-16 flex-shrink-0 object-cover"
+                    className="h-16 w-16 flex-shrink-0 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center bg-zinc-950 font-serif text-2xl font-black text-white">
+                  <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-primary text-2xl font-black text-primary-foreground">
                     {(post.author.name || "S").charAt(0)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Written by</p>
-                  <p className="mt-1 font-serif text-2xl font-black text-zinc-950">{post.author.name || "Sadi"}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Written by</p>
+                  <p className="mt-1 text-2xl font-black text-foreground">{post.author.name || "Sadi"}</p>
                   {post.author.bio && (
-                    <div className="mt-3 text-sm leading-relaxed text-zinc-500">
+                    <div className="mt-3 text-sm leading-relaxed text-muted-foreground">
                       <PortableText value={post.author.bio} />
                     </div>
                   )}
@@ -598,7 +598,7 @@ export default async function PostPage({
                           href={item.href}
                           target="_blank"
                           rel="noreferrer"
-                          className="border border-zinc-300 px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 transition-colors hover:border-zinc-950 hover:bg-zinc-950 hover:text-white"
+                          className="rounded border border-border px-3 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
                         >
                           {item.label}
                         </a>
@@ -613,30 +613,28 @@ export default async function PostPage({
 
         {/* Related posts */}
         {related.length > 0 && (
-          <div className="border-t border-zinc-100 bg-zinc-50 py-16">
+          <div className="border-t border-border bg-secondary/30 py-16">
             <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
               <div className="mb-10 flex items-center gap-4">
-                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-950">More to Read</span>
-                <div className="h-px flex-1 bg-zinc-200" />
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-foreground">More to Read</span>
+                <div className="h-px flex-1 bg-border" />
               </div>
-              <div className="grid gap-px border border-zinc-200 bg-zinc-200 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-px rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
                 {related.map((item) => (
                   <Link
                     key={item.slug.current}
                     href={`/post/${item.slug.current}`}
-                    className="group block bg-white p-7 transition-colors hover:bg-zinc-50"
+                    className="group block bg-card p-7 transition-colors first:rounded-tl-lg first:rounded-tr-lg last:rounded-bl-lg last:rounded-br-lg hover:bg-accent/50"
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
                       {formatDate(item.publishedAt ?? "")}
                     </p>
-                    <h4 className="mt-3 font-serif text-lg font-black leading-snug tracking-tight text-zinc-950 group-hover:underline">
+                    <h4 className="mt-3 text-lg font-black leading-snug tracking-tight text-foreground group-hover:underline">
                       {item.title}
                     </h4>
-                    <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 transition-colors group-hover:text-zinc-950">
+                    <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground transition-colors group-hover:text-primary">
                       Read
-                      <svg className="h-2.5 w-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M2 6h8M6 2l4 4-4 4" />
-                      </svg>
+                      <ArrowRight className="h-2.5 w-2.5" />
                     </span>
                   </Link>
                 ))}

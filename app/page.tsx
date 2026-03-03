@@ -1,6 +1,7 @@
 import { client } from '@/lib/sanity'
 import Image from 'next/image'
 import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { urlFor } from '@/lib/image'
 import type { Metadata } from 'next'
 
@@ -124,340 +125,377 @@ async function getData(): Promise<HomeData> {
 
 export default async function Home() {
   const data = await getData()
-  const categorySections = [
-    { title: "Politics", href: "/category/politics", posts: data.politics },
-    { title: "Tech",     href: "/category/tech",     posts: data.tech },
-    { title: "Islamic",  href: "/category/islam",    posts: data.islam },
-  ]
   const latestImageUrl = getFeaturedImageUrl(data.latest, 1500, 860)
 
   return (
-    <>
-      {/* ═══════════════ HERO ═══════════════ */}
-      <section className="relative w-full overflow-hidden border-b-2 border-black bg-white">
+    <div className="min-h-screen bg-background">
 
-        {/* Decorative large ghost text */}
-        <span
+      {/* ══════════════════════════════════════════
+          HERO
+      ══════════════════════════════════════════ */}
+      <section className="relative overflow-hidden border-b border-border bg-background">
+
+        {/* line grid — same as footer */}
+        <div
           aria-hidden="true"
-          className="pointer-events-none absolute -left-4 bottom-0 select-none font-serif text-[clamp(8rem,28vw,22rem)] font-black leading-none tracking-tighter text-zinc-100"
-        >
-          SADI
-        </span>
+          className="pointer-events-none absolute inset-0 opacity-[0.04] dark:opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+        {/* radial fade so grid dissolves behind the content */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 70% at 50% 50%, var(--background) 30%, transparent 100%)",
+          }}
+        />
+        {/* teal glow top-center */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[700px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+        />
 
-        <div className="relative mx-auto grid min-h-[80vh] max-w-7xl grid-cols-1 lg:grid-cols-2">
+        <div className="relative mx-auto max-w-4xl px-4 py-24 text-center sm:px-6 sm:py-32 lg:py-40">
 
-          {/* ── Left: copy ── */}
-          <div className="flex flex-col justify-between border-black px-6 py-14 lg:border-r lg:px-14 lg:py-16">
-            <div>
-              {/* Run-of-paper label */}
-              <div className="flex items-center gap-3">
-                <div className="h-4 w-1 bg-black" />
-                <p className="text-[10px] font-black uppercase tracking-[0.45em] text-zinc-400">
-                  Independent Writing · Est. 2024
-                </p>
-              </div>
-
-              {/* Headline */}
-              <h1 className="mt-8 font-serif text-[clamp(3rem,7vw,6.5rem)] font-black leading-[0.92] tracking-tighter text-black">
-                Mohammad<br />Sadi
-              </h1>
-
-              {/* Deck text */}
-              <p className="mt-7 max-w-sm border-l-2 border-black pl-4 text-sm leading-relaxed text-zinc-500 md:text-base">
-                Political commentary, technology insight, Islamic reflection,
-                and bold opinion — crafted for readers who want clarity over noise.
-              </p>
-            </div>
-
-            {/* CTA + categories */}
-            <div className="mt-12">
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/#newsletter"
-                  className="inline-block border-2 border-black bg-black px-7 py-3 text-[11px] font-black uppercase tracking-[0.3em] text-white transition-colors duration-150 hover:bg-white hover:text-black"
-                >
-                  Subscribe
-                </Link>
-                <Link
-                  href="/category/opinion"
-                  className="inline-block border-2 border-black px-7 py-3 text-[11px] font-black uppercase tracking-[0.3em] text-black transition-colors duration-150 hover:bg-black hover:text-white"
-                >
-                  Read Opinion
-                </Link>
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-x-5 gap-y-1 border-t border-zinc-200 pt-6">
-                {[
-                  { label: "Politics", href: "/category/politics" },
-                  { label: "Technology", href: "/category/tech" },
-                  { label: "Islam", href: "/category/islam" },
-                  { label: "Opinion", href: "/category/opinion" },
-                ].map((cat) => (
-                  <Link
-                    key={cat.href}
-                    href={cat.href}
-                    className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 transition-colors duration-150 hover:text-black"
-                  >
-                    {cat.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
+          {/* portrait */}
+          <div className="mx-auto mb-8 h-36 w-36 overflow-hidden rounded-full border-4 border-background shadow-xl ring-2 ring-primary/30 sm:h-44 sm:w-44">
+            <Image
+              src="/profile.jpeg"
+              alt="Mohammad Sadi"
+              width={176}
+              height={176}
+              priority
+              className="h-full w-full object-cover object-top"
+            />
           </div>
 
-          {/* ── Right: portrait ── */}
-          <div className="relative flex items-end justify-center overflow-hidden bg-zinc-50 px-8 pt-10 lg:items-end lg:justify-end lg:px-16">
-            {/* Rotated label */}
-            <span
-              aria-hidden="true"
-              className="absolute left-5 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-black uppercase tracking-[0.5em] text-zinc-300 lg:left-6"
+          {/* eyebrow */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            Independent Writing
+          </div>
+
+          {/* headline */}
+          <h1 className="mt-8 font-extrabold leading-[0.9] tracking-tight text-foreground">
+            <span className="block text-[clamp(2.8rem,7.5vw,6rem)]">Mohammad</span>
+            <span className="block text-[clamp(3.5rem,10vw,8rem)] text-primary">Sadi</span>
+          </h1>
+
+          {/* rule */}
+          <div className="mx-auto mt-8 flex items-center gap-4 max-w-sm">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/50">Personal Opinion</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          {/* tagline */}
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Political commentary, technology insight, Islamic reflection —
+            crafted for readers who want clarity over noise.
+          </p>
+
+          {/* CTAs */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/#newsletter"
+              className="inline-flex h-11 items-center rounded-md bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
             >
-              Personal Journal
-            </span>
-
-            <div className="relative z-10 w-full max-w-sm lg:max-w-none">
-              {/* Number tag */}
-              <div className="absolute -left-3 -top-3 z-20 border-2 border-black bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-widest text-black">
-                01
-              </div>
-              <Image
-                src="/profile.jpeg"
-                alt="Mohammad Sadi"
-                width={600}
-                height={720}
-                priority
-                className="relative block h-auto w-full object-cover object-top"
-                style={{ aspectRatio: "5/6" }}
-              />
-            </div>
+              Subscribe
+            </Link>
+            <Link
+              href="/post"
+              className="inline-flex h-11 items-center rounded-md border border-border px-8 text-sm font-semibold text-foreground transition-all hover:bg-accent hover:-translate-y-0.5"
+            >
+              Browse All Posts
+            </Link>
           </div>
 
+          {/* category links */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            {[
+              { label: "Politics", href: "/category/politics" },
+              { label: "Technology", href: "/category/tech" },
+              { label: "Islam", href: "/category/islam" },
+              { label: "Opinion", href: "/category/opinion" },
+            ].map((cat) => (
+              <Link
+                key={cat.href}
+                href={cat.href}
+                className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
+              >
+                {cat.label} →
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="relative min-h-screen w-full bg-white">
+      <main className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
 
-        <main className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-
-          {/* ═══════════════════════════════════════════════
-              FEATURED STORY
-          ═══════════════════════════════════════════════ */}
-          {data.latest && (
-            <section className="mb-16">
-              {/* Section label row */}
-              <div className="mb-6 flex items-center gap-4">
-                <span className="text-[10px] font-black uppercase tracking-[0.45em] text-black">Featured Story</span>
-                <div className="h-px flex-1 bg-black" />
-              </div>
-
-              <Link
-                href={`/post/${data.latest.slug.current}`}
-                className="group grid gap-0 overflow-hidden border border-black md:grid-cols-[1.1fr_0.9fr]"
-              >
-                {/* Image */}
-                {latestImageUrl ? (
-                  <div className="relative aspect-[16/10] overflow-hidden">
-                    <Image
-                      src={latestImageUrl}
-                      alt={getFeaturedImageAlt(data.latest)}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 60vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      priority
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-[16/10] bg-zinc-100" />
-                )}
-
-                {/* Text pane */}
-                <div className="flex flex-col justify-between border-l-0 border-black bg-white p-8 md:border-l lg:p-12">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
-                      {formatDate(data.latest.publishedAt)}
-                    </p>
-                    <h2 className="mt-5 font-serif text-4xl font-black leading-tight tracking-tight text-black xl:text-5xl">
-                      {data.latest.title}
-                    </h2>
-                  </div>
-                  <div className="mt-8 flex items-center gap-3">
-                    <span className="text-[11px] font-black uppercase tracking-[0.3em] text-black transition-all duration-200 group-hover:tracking-[0.5em]">
-                      Read Full Story
-                    </span>
-                    <svg className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </div>
+        {/* ══════════════════════════════════════════
+            FEATURED STORY — full-bleed image + side text
+        ══════════════════════════════════════════ */}
+        {data.latest && (
+          <section className="mb-20">
+            <div className="mb-6 flex items-center gap-3">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Featured Story</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <Link
+              href={`/post/${data.latest.slug.current}`}
+              className="group relative flex min-h-[420px] overflow-hidden rounded-2xl border border-border bg-card shadow-md transition-shadow hover:shadow-xl sm:min-h-[500px]"
+            >
+              {/* Image fills entire card */}
+              {latestImageUrl ? (
+                <Image
+                  src={latestImageUrl}
+                  alt={getFeaturedImageAlt(data.latest)}
+                  fill
+                  sizes="100vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  priority
+                />
+              ) : (
+                <div className="absolute inset-0 bg-secondary" />
+              )}
+              {/* Dark gradient from bottom */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              {/* Content pinned to bottom-left */}
+              <div className="relative mt-auto w-full p-8 md:p-12 lg:max-w-2xl">
+                <p className="text-xs font-medium text-white/60">{formatDate(data.latest.publishedAt)}</p>
+                <h2 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl xl:text-4xl">
+                  {data.latest.title}
+                </h2>
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur-sm ring-1 ring-white/20 transition-all group-hover:bg-white/20">
+                  Read Article
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                 </div>
-              </Link>
-            </section>
-          )}
-
-          {/* ═══════════════════════════════════════════════
-              RECENT POSTS — newspaper index list
-          ═══════════════════════════════════════════════ */}
-          {data.posts.length > 0 && (
-            <section className="mb-16">
-              <div className="mb-6 flex items-center gap-4">
-                <span className="text-[10px] font-black uppercase tracking-[0.45em] text-black">Latest Posts</span>
-                <div className="h-px flex-1 bg-black" />
               </div>
+            </Link>
+          </section>
+        )}
 
-              {/* Top 2 — card with image */}
-              <div className="mb-0 grid border-b border-black md:grid-cols-2">
-                {data.posts.slice(0, 2).map((post, i) => {
-                  const img = getFeaturedImageUrl(post, 900, 540)
+        {/* ══════════════════════════════════════════
+            LATEST POSTS — zigzag alternating layout
+        ══════════════════════════════════════════ */}
+        {data.posts.length > 0 && (
+          <section className="mb-20">
+            <div className="mb-8 flex items-center gap-3">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Latest Posts</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="space-y-4">
+              {data.posts.map((post, i) => {
+                const img = getFeaturedImageUrl(post, 900, 540)
+                const isEven = i % 2 === 0
+                return (
+                  <Link
+                    key={post.slug.current}
+                    href={`/post/${post.slug.current}`}
+                    className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:min-h-[220px]"
+                  >
+                    {/* Image — left on even, right on odd (desktop) */}
+                    <div className={`relative aspect-[16/9] shrink-0 overflow-hidden sm:aspect-auto sm:w-2/5 ${isEven ? "sm:order-first" : "sm:order-last"}`}>
+                      {img ? (
+                        <Image
+                          src={img}
+                          alt={getFeaturedImageAlt(post)}
+                          fill
+                          sizes="(max-width: 640px) 100vw, 40vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-secondary" />
+                      )}
+                    </div>
+                    {/* Content */}
+                    <div className={`flex flex-col justify-center gap-4 p-6 sm:p-8 ${isEven ? "" : ""}`}>
+                      <p className="text-xs font-medium text-muted-foreground">{formatDate(post.publishedAt)}</p>
+                      <h3 className="text-xl font-bold leading-snug tracking-tight text-card-foreground sm:text-2xl">
+                        {post.title}
+                      </h3>
+                      <span className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-primary">
+                        Read Article
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ══════════════════════════════════════════
+            CATEGORY SECTIONS — each a distinct layout
+        ══════════════════════════════════════════ */}
+        <div className="space-y-20">
+
+          {/* ── POLITICS — 3-column card grid ── */}
+          {data.politics.length > 0 && (
+            <section>
+              <div className="mb-8 flex items-end justify-between gap-4 border-t border-border pt-6">
+                <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Politics</h2>
+                <Link href="/category/politics" className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary">
+                  All Politics
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {data.politics.map((post) => {
+                  const img = getFeaturedImageUrl(post, 700, 420)
                   return (
                     <Link
                       key={post.slug.current}
                       href={`/post/${post.slug.current}`}
-                      className={`group flex flex-col border-black p-6 transition-colors duration-150 hover:bg-zinc-50 ${i === 0 ? "border-b border-black md:border-b-0 md:border-r" : ""}`}
+                      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
                     >
-                      {img && (
-                        <div className="relative mb-5 aspect-[16/9] overflow-hidden">
-                          <Image
-                            src={img}
-                            alt={getFeaturedImageAlt(post)}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        </div>
-                      )}
-                      <div className="flex flex-1 flex-col justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400">
-                            {formatDate(post.publishedAt)}
-                          </p>
-                          <h3 className="mt-3 font-serif text-2xl font-black leading-tight text-black xl:text-3xl">
-                            {post.title}
-                          </h3>
-                        </div>
-                        <div className="mt-5 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.25em] text-black">
-                          Read
-                          <svg className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                          </svg>
-                        </div>
+                      <div className="relative aspect-[16/9] overflow-hidden">
+                        {img ? (
+                          <Image src={img} alt={getFeaturedImageAlt(post)} fill sizes="(max-width: 640px) 100vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                        ) : (
+                          <div className="h-full w-full bg-secondary" />
+                        )}
+                      </div>
+                      <div className="flex flex-1 flex-col gap-3 p-5">
+                        <p className="text-xs font-medium text-muted-foreground">{formatDate(post.publishedAt)}</p>
+                        <h3 className="flex-1 text-base font-bold leading-snug text-card-foreground">{post.title}</h3>
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+                          Read Article
+                          <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+                        </span>
                       </div>
                     </Link>
                   )
                 })}
               </div>
+            </section>
+          )}
 
-              {/* Remaining 4 — index rows */}
-              <div>
-                {data.posts.slice(2).map((post, i) => (
-                  <Link
-                    key={post.slug.current}
-                    href={`/post/${post.slug.current}`}
-                    className="group flex items-baseline justify-between gap-6 border-b border-zinc-200 px-2 py-4 transition-colors duration-150 hover:bg-zinc-50 last:border-b-0"
-                  >
-                    <div className="flex items-baseline gap-5 overflow-hidden">
-                      <span className="shrink-0 font-serif text-4xl font-black leading-none text-zinc-100">
-                        {String(i + 3).padStart(2, "0")}
-                      </span>
-                      <h3 className="truncate font-serif text-lg font-bold text-black">
-                        {post.title}
-                      </h3>
-                    </div>
-                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                      {formatDate(post.publishedAt)}
-                    </span>
-                  </Link>
-                ))}
+          {/* ── TECH — newspaper horizontal thumbnail rows ── */}
+          {data.tech.length > 0 && (
+            <section>
+              <div className="mb-8 flex items-end justify-between gap-4 border-t border-border pt-6">
+                <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Technology</h2>
+                <Link href="/category/tech" className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary">
+                  All Tech
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                {data.tech.map((post) => {
+                  const img = getFeaturedImageUrl(post, 300, 200)
+                  return (
+                    <Link
+                      key={post.slug.current}
+                      href={`/post/${post.slug.current}`}
+                      className="group flex items-center gap-4 p-4 transition-colors hover:bg-accent/50 sm:gap-6 sm:p-5"
+                    >
+                      {/* Small thumbnail */}
+                      <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg sm:h-24 sm:w-40">
+                        {img ? (
+                          <Image src={img} alt={getFeaturedImageAlt(post)} fill sizes="160px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                        ) : (
+                          <div className="h-full w-full bg-secondary" />
+                        )}
+                      </div>
+                      {/* Text */}
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <p className="text-xs font-medium text-muted-foreground">{formatDate(post.publishedAt)}</p>
+                        <h3 className="line-clamp-2 text-base font-bold leading-snug text-card-foreground group-hover:text-primary transition-colors sm:text-lg">
+                          {post.title}
+                        </h3>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                          Read Article
+                          <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+                        </span>
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             </section>
           )}
 
-          {/* ═══════════════════════════════════════════════
-              CATEGORY EDITIONS
-          ═══════════════════════════════════════════════ */}
-          <section className="space-y-14">
-            {categorySections.map((section) => {
-              const [lead, ...rest] = section.posts
-              const leadImg = getFeaturedImageUrl(lead, 1200, 700)
-              return (
-                <div key={section.title} className="border-t-2 border-black pt-8">
-                  {/* Category row header */}
-                  <div className="mb-8 flex items-end justify-between gap-4">
-                    <h2 className="font-serif text-5xl font-black uppercase leading-none tracking-tight text-black md:text-7xl">
-                      {section.title}
-                    </h2>
+          {/* ── ISLAM — magazine cover overlays ── */}
+          {data.islam.length > 0 && (
+            <section>
+              <div className="mb-8 flex items-end justify-between gap-4 border-t border-border pt-6">
+                <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Islamic</h2>
+                <Link href="/category/islam" className="flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary">
+                  All Islamic
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              {/* First post: wide hero cover */}
+              {(() => {
+                const [hero, ...rest] = data.islam
+                const heroImg = getFeaturedImageUrl(hero, 1200, 600)
+                return (
+                  <div className="space-y-4">
                     <Link
-                      href={section.href}
-                      className="group flex shrink-0 items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 transition-colors duration-150 hover:text-black"
+                      href={`/post/${hero.slug.current}`}
+                      className="group relative flex min-h-[300px] overflow-hidden rounded-2xl border border-border shadow-md transition-shadow hover:shadow-xl sm:min-h-[380px]"
                     >
-                      All {section.title}
-                      <svg className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </Link>
-                  </div>
-
-                  {lead ? (
-                    <div className="grid gap-0 border border-black md:grid-cols-[1.4fr_0.6fr]">
-                      {/* Lead post */}
-                      <Link
-                        href={`/post/${lead.slug.current}`}
-                        className="group border-b border-black md:border-b-0 md:border-r"
-                      >
-                        {leadImg && (
-                          <div className="relative aspect-[16/9] overflow-hidden">
-                            <Image
-                              src={leadImg}
-                              alt={getFeaturedImageAlt(lead)}
-                              fill
-                              sizes="(max-width: 768px) 100vw, 60vw"
-                              className="object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                          </div>
-                        )}
-                        <div className="p-6">
-                          <h3 className="font-serif text-2xl font-black leading-tight text-black md:text-3xl">
-                            {lead.title}
-                          </h3>
-                          <div className="mt-4 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.25em] text-black">
-                            Read
-                            <svg className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
-                          </div>
+                      {heroImg ? (
+                        <Image src={heroImg} alt={getFeaturedImageAlt(hero)} fill sizes="100vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                      ) : (
+                        <div className="absolute inset-0 bg-secondary" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                      <div className="relative mt-auto p-7 md:p-10 lg:max-w-xl">
+                        <p className="text-xs font-medium text-white/60">{formatDate(hero.publishedAt)}</p>
+                        <h3 className="mt-2 text-xl font-extrabold leading-tight text-white sm:text-2xl md:text-3xl">{hero.title}</h3>
+                        <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur-sm ring-1 ring-white/20 transition-all group-hover:bg-white/20">
+                          Read Article
+                          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                         </div>
-                      </Link>
+                      </div>
+                    </Link>
 
-                      {/* Sidebar list */}
-                      <div className="flex flex-col divide-y divide-zinc-200">
-                        {(rest.length > 0 ? rest : Array(2).fill(null)).map((post, idx) =>
-                          post ? (
+                    {/* Remaining: smaller side-by-side covers */}
+                    {rest.length > 0 && (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {rest.map((post) => {
+                          const img = getFeaturedImageUrl(post, 700, 420)
+                          return (
                             <Link
                               key={post.slug.current}
                               href={`/post/${post.slug.current}`}
-                              className="group flex flex-1 flex-col justify-between p-5 transition-colors duration-150 hover:bg-zinc-50"
+                              className="group relative flex min-h-[220px] overflow-hidden rounded-xl border border-border shadow-sm transition-shadow hover:shadow-lg"
                             >
-                              <span className="font-serif text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300">
-                                0{idx + 2}
-                              </span>
-                              <p className="mt-2 font-serif text-base font-bold leading-snug text-black group-hover:underline">
-                                {post.title}
-                              </p>
+                              {img ? (
+                                <Image src={img} alt={getFeaturedImageAlt(post)} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                              ) : (
+                                <div className="absolute inset-0 bg-secondary" />
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                              <div className="relative mt-auto p-5">
+                                <p className="text-[11px] font-medium text-white/60">{formatDate(post.publishedAt)}</p>
+                                <h3 className="mt-1.5 text-sm font-bold leading-snug text-white sm:text-base">{post.title}</h3>
+                                <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-white/80 transition-colors group-hover:text-white">
+                                  Read Article
+                                  <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                </span>
+                              </div>
                             </Link>
-                          ) : (
-                            <div key={idx} className="flex flex-1 items-center p-5 text-xs text-zinc-300">—</div>
                           )
-                        )}
+                        })}
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-zinc-400">No posts yet in this category.</p>
-                  )}
-                </div>
-              )
-            })}
-          </section>
+                    )}
+                  </div>
+                )
+              })()}
+            </section>
+          )}
 
-        </main>
-      </section>
-    </>
+        </div>
+      </main>
+    </div>
   )
 }

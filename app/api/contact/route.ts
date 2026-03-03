@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import nodemailer from "nodemailer"
 
 type ContactPayload = {
   name?: unknown
@@ -66,31 +67,53 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Input too long." }, { status: 422 })
   }
 
-  // ── Send email ──────────────────────────────────────────────────────────────
-  // To wire up email delivery, install nodemailer and configure SMTP env vars:
-  //   CONTACT_SMTP_HOST, CONTACT_SMTP_PORT, CONTACT_SMTP_USER,
-  //   CONTACT_SMTP_PASS, CONTACT_TO_EMAIL
-  //
-  // Example (uncomment when ready):
-  //
-  // import nodemailer from "nodemailer"
-  // const transporter = nodemailer.createTransport({
-  //   host: process.env.CONTACT_SMTP_HOST,
-  //   port: Number(process.env.CONTACT_SMTP_PORT ?? 587),
-  //   auth: { user: process.env.CONTACT_SMTP_USER, pass: process.env.CONTACT_SMTP_PASS },
-  // })
-  // await transporter.sendMail({
-  //   from: `"${name}" <${process.env.CONTACT_SMTP_USER}>`,
-  //   replyTo: email,
-  //   to: process.env.CONTACT_TO_EMAIL,
-  //   subject: `[Contact] ${subject}`,
-  //   text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
-  // })
-  // ────────────────────────────────────────────────────────────────────────────
+  // ── Send email via SMTP (nodemailer) ────────────────────────────────────────
+  const smtpHost = process.env.CONTACT_SMTP_HOST
+  const smtpUser = process.env.CONTACT_SMTP_USER
+  const smtpPass = process.env.CONTACT_SMTP_PASS
+  const toEmail  = process.env.CONTACT_TO_EMAIL
 
-  // Log to console in development
-  if (process.env.NODE_ENV === "development") {
-    console.log("[contact]", { name, email, subject, message: message.slice(0, 100) })
+  if (smtpHost && smtpUser && smtpPass && toEmail) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: Number(process.env.CONTACT_SMTP_PORT ?? 587),
+        secure: Number(process.env.CONTACT_SMTP_PORT ?? 587) === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      })
+
+      await transporter.sendMail({
+        from: `"${name}" <${smtpUser}>`,
+        replyTo: `"${name}" <${email}>`,
+        to: toEmail,
+        subject: `[Contact] ${subject}`,
+        text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
+        html: `
+          <table style="font-family:sans-serif;font-size:14px;color:#111;width:100%;max-width:560px">
+            <tr><td style="padding:24px 0 8px">
+              <h2 style="margin:0;font-size:20px">New contact message</h2>
+            </td></tr>
+            <tr><td style="padding:4px 0"><strong>Name:</strong> ${name}</td></tr>
+            <tr><td style="padding:4px 0"><strong>Email:</strong> <a href="mailto:${email}">${email}</a></td></tr>
+            <tr><td style="padding:4px 0"><strong>Subject:</strong> ${subject}</td></tr>
+            <tr><td style="padding:16px 0 0">
+              <strong>Message:</strong>
+              <p style="margin:8px 0 0;white-space:pre-wrap;line-height:1.6">${message}</p>
+            </td></tr>
+          </table>`,
+      })
+    } catch (err) {
+      console.error("[contact] SMTP send failed:", err)
+      return NextResponse.json(
+        { error: "Failed to send message. Please try again later." },
+        { status: 500 }
+      )
+    }
+  } else {
+    // Log to console when SMTP is not configured (dev / preview)
+    console.log("[contact] SMTP not configured — would have sent:", {
+      name, email, subject, message: message.slice(0, 100),
+    })
   }
 
   return NextResponse.json({ ok: true }, { status: 200 })

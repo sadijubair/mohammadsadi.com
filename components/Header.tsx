@@ -3,8 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
+import * as NavigationMenu from "@radix-ui/react-navigation-menu"
+import * as Separator from "@radix-ui/react-separator"
+import { X, Search, Menu, ArrowRight } from "lucide-react"
 import SearchBox from "./SearchBox"
+import ThemeToggle from "./ThemeToggle"
 import { CATEGORIES } from "@/lib/categories"
+import { cn } from "@/lib/utils"
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -12,179 +17,182 @@ const navItems = [
   { href: "/contact", label: "Contact" },
 ]
 
-const TODAY = new Intl.DateTimeFormat("en-US", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-}).format(new Date())
-
 export default function Header() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
-  // Lock body scroll when overlay menu is open
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : ""
     return () => { document.body.style.overflow = "" }
   }, [menuOpen])
 
-  const isActive = (path: string) => pathname === path
+  const isActive = (href: string) => pathname === href
 
   return (
     <>
-      <header className="sticky top-0 z-50">
-        {/* ── Masthead row ── */}
-        <div className="bg-black text-white">
-          <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            {/* Date — hidden on small screens */}
-            <p className="hidden w-48 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-400 lg:block">
-              {TODAY}
-            </p>
+      <header
+        className={cn(
+          "sticky top-0 z-50 w-full border-b border-border bg-background/90 backdrop-blur-md transition-shadow duration-200",
+          scrolled && "shadow-sm"
+        )}
+      >
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 
-            {/* Site name — always centered */}
-            <Link
-              href="/"
-              className="absolute left-1/2 -translate-x-1/2 text-center font-serif text-2xl font-black leading-none tracking-tight text-white transition-opacity duration-200 hover:opacity-75 sm:text-3xl"
+          {/* ── Logo ── */}
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2 text-foreground transition-opacity hover:opacity-75"
+          >
+            <span className="text-lg font-bold tracking-tight">Mohammad Sadi</span>
+          </Link>
+
+          {/* ── Desktop nav (Radix NavigationMenu) ── */}
+          <NavigationMenu.Root className="hidden lg:flex">
+            <NavigationMenu.List className="flex items-center">
+              {navItems.map((item) => (
+                <NavigationMenu.Item key={item.href}>
+                  <NavigationMenu.Link asChild>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "relative inline-flex h-8 items-center rounded-md px-3 text-sm font-medium transition-colors duration-150",
+                        isActive(item.href)
+                          ? "text-primary"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      {item.label}
+                      {isActive(item.href) && (
+                        <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-primary" />
+                      )}
+                    </Link>
+                  </NavigationMenu.Link>
+                </NavigationMenu.Item>
+              ))}
+            </NavigationMenu.List>
+          </NavigationMenu.Root>
+
+          {/* ── Right actions ── */}
+          <div className="flex items-center gap-1">
+            {/* Search toggle */}
+            <button
+              onClick={() => { setSearchOpen((v) => !v); setMenuOpen(false) }}
+              aria-label={searchOpen ? "Close search" : "Open search"}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >
-              Mohammad Sadi
+              {searchOpen ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+            </button>
+
+            {/* Dark mode toggle */}
+            <ThemeToggle />
+
+            {/* Subscribe — desktop */}
+            <Separator.Root orientation="vertical" className="mx-1 hidden h-5 w-px bg-border lg:block" decorative />
+            <Link
+              href="/#newsletter"
+              className="hidden lg:inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Subscribe
             </Link>
 
-            {/* Right actions */}
-            <div className="ml-auto flex items-center gap-3 lg:ml-0 lg:w-48 lg:justify-end">
-              {/* Search toggle */}
-              <button
-                onClick={() => setSearchOpen((v) => !v)}
-                aria-label={searchOpen ? "Close search" : "Open search"}
-                className="rounded-md p-1.5 text-zinc-400 transition-colors duration-150 hover:bg-white/10 hover:text-white"
-              >
-                {searchOpen ? (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                )}
-              </button>
-
-              <Link
-                href="/#newsletter"
-                className="hidden rounded-sm border border-white/30 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-colors duration-150 hover:bg-white hover:text-black lg:inline-flex"
-              >
-                Subscribe
-              </Link>
-
-              {/* Hamburger — mobile only */}
-              <button
-                className="rounded-md p-1.5 text-zinc-400 transition-colors duration-150 hover:bg-white/10 hover:text-white lg:hidden"
-                onClick={() => setMenuOpen(true)}
-                aria-label="Open menu"
-                aria-expanded={menuOpen}
-                aria-controls="mobile-nav"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Expandable search bar */}
-          <div
-            className={`transition-all duration-300 ${searchOpen ? "overflow-visible max-h-24 border-t border-white/10" : "overflow-hidden max-h-0"}`}
-          >
-            <div className="mx-auto max-w-2xl px-4 py-3">
-              <SearchBox dark />
-            </div>
+            {/* Hamburger — mobile */}
+            <button
+              onClick={() => { setMenuOpen(true); setSearchOpen(false) }}
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground lg:hidden"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
-        {/* ── Nav strip ── */}
-        <nav
-          className="hidden border-b border-zinc-200 bg-white lg:block"
-          aria-label="Main navigation"
+        {/* ── Expandable search bar ── */}
+        <div
+          className={cn(
+            "transition-all duration-300",
+            searchOpen ? "max-h-24 border-t border-border overflow-visible" : "max-h-0 overflow-hidden"
+          )}
         >
-          <div className="mx-auto flex h-10 max-w-7xl items-center justify-center gap-0 px-4 sm:px-6 lg:px-8">
-            {navItems.map((item, index) => (
-              <div key={item.href} className="flex items-center">
-                {index > 0 && (
-                  <span className="mx-3 h-3 w-px bg-zinc-300" aria-hidden="true" />
-                )}
-                <Link
-                  href={item.href}
-                  className={`text-[12px] font-bold uppercase tracking-[0.18em] transition-colors duration-150 ${
-                    isActive(item.href)
-                      ? "text-black underline underline-offset-4 decoration-2"
-                      : "text-zinc-500 hover:text-black"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </div>
-            ))}
+          <div className="mx-auto max-w-2xl px-4 py-3">
+            <SearchBox />
           </div>
-        </nav>
+        </div>
       </header>
 
-      {/* ── Full-screen mobile overlay ── */}
+      {/* ── Mobile overlay ── */}
       <div
-        id="mobile-nav"
         aria-hidden={!menuOpen}
-        className={`fixed inset-0 z-[60] flex flex-col bg-black text-white transition-opacity duration-300 lg:hidden ${
+        className={cn(
+          "fixed inset-0 z-[60] flex flex-col bg-background transition-opacity duration-300 lg:hidden",
           menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+        )}
       >
         {/* Overlay header */}
-        <div className="flex h-14 items-center justify-between border-b border-white/10 px-5">
+        <div className="flex h-14 items-center justify-between border-b border-border px-4">
           <Link
             href="/"
             onClick={() => setMenuOpen(false)}
-            className="font-serif text-2xl font-black tracking-tight"
+            className="text-lg font-bold tracking-tight text-foreground"
           >
             Mohammad Sadi
           </Link>
           <button
             onClick={() => setMenuOpen(false)}
             aria-label="Close menu"
-            className="rounded-md p-1.5 text-zinc-400 hover:bg-white/10 hover:text-white"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Overlay nav links */}
-        <nav className="flex flex-1 flex-col justify-center px-8">
+        {/* Overlay nav */}
+        <nav className="flex flex-1 flex-col overflow-y-auto px-4">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setMenuOpen(false)}
-              className={`border-b border-white/10 py-5 font-serif text-4xl font-black tracking-tight transition-colors duration-150 ${
-                isActive(item.href) ? "text-white" : "text-zinc-500 hover:text-white"
-              }`}
+              className={cn(
+                "flex items-center justify-between border-b border-border py-4 text-base font-medium transition-colors",
+                isActive(item.href) ? "text-primary" : "text-foreground hover:text-primary"
+              )}
             >
               {item.label}
+              {isActive(item.href) && (
+                <ArrowRight className="h-4 w-4 text-primary" />
+              )}
             </Link>
           ))}
         </nav>
 
-        {/* Overlay footer row */}
-        <div className="border-t border-white/10 px-8 py-6">
-          <div className="mb-4">
-            <SearchBox />
+        {/* Overlay footer */}
+        <div className="border-t border-border px-4 py-4 space-y-3">
+          <SearchBox />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/#newsletter"
+              onClick={() => setMenuOpen(false)}
+              className="flex-1 inline-flex h-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Subscribe to Newsletter
+            </Link>
+            <ThemeToggle className="border border-border" />
           </div>
-          <Link
-            href="/#newsletter"
-            onClick={() => setMenuOpen(false)}
-            className="block w-full rounded-sm border border-white/30 py-3 text-center text-[12px] font-bold uppercase tracking-[0.2em] text-white transition-colors duration-150 hover:bg-white hover:text-black"
-          >
-            Subscribe to Newsletter
-          </Link>
         </div>
       </div>
     </>

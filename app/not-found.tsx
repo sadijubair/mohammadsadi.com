@@ -9,63 +9,69 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-[calc(100dvh-5rem)] flex-col bg-white">
+    <main className="relative flex min-h-[calc(100dvh-5rem)] flex-col items-center justify-center overflow-hidden bg-background">
 
-      {/* ── Top rule ── */}
-      <div className="h-1 w-full bg-black" />
+      {/* line grid */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.04] dark:opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(ellipse 70% 70% at 50% 50%, var(--background) 40%, transparent 100%)" }}
+      />
+      <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 h-80 w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/8 blur-3xl" />
 
-      {/* ── Body ── */}
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+      {/* ghost 404 */}
+      <p
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none text-[clamp(10rem,35vw,24rem)] font-extrabold leading-none tracking-tighter text-foreground/[0.04]"
+      >
+        404
+      </p>
 
-        {/* Ghost number */}
-        <p
-          aria-hidden="true"
-          className="select-none font-serif text-[clamp(8rem,30vw,22rem)] font-black leading-none tracking-tighter text-zinc-100"
-        >
-          404
+      {/* content */}
+      <div className="relative z-10 px-6 py-24 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+          404 — Not Found
+        </div>
+
+        <h1 className="mt-6 text-[clamp(2.5rem,8vw,5rem)] font-extrabold leading-[0.95] tracking-tight text-foreground">
+          Nothing here.
+        </h1>
+
+        <div className="mx-auto mt-6 flex items-center gap-4 max-w-xs">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/40">lost?</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <p className="mx-auto mt-6 max-w-sm text-sm leading-relaxed text-muted-foreground">
+          The page you requested doesn&rsquo;t exist, may have moved, or the URL might be wrong.
         </p>
 
-        {/* Content sits on top of ghost — use negative margin to pull it up */}
-        <div className="-mt-[clamp(3rem,8vw,7rem)] relative z-10">
-          {/* Label */}
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">
-            Page Not Found
-          </p>
-
-          {/* Headline */}
-          <h1 className="mt-4 font-serif text-4xl font-black leading-tight tracking-tight text-black md:text-5xl">
-            Nothing here.
-          </h1>
-
-          {/* Divider */}
-          <div className="mx-auto mt-6 h-px w-12 bg-black" />
-
-          {/* Body text */}
-          <p className="mx-auto mt-6 max-w-sm text-base leading-relaxed text-zinc-500">
-            The page you requested doesn&rsquo;t exist, may have moved, or the
-            URL might be wrong.
-          </p>
-
-          {/* CTAs */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/"
-              className="border-2 border-black bg-black px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.25em] text-white transition-colors duration-150 hover:bg-white hover:text-black"
-            >
-              Go Home
-            </Link>
-            <Link
-              href="/contact"
-              className="border-2 border-black px-8 py-3.5 text-[11px] font-black uppercase tracking-[0.25em] text-black transition-colors duration-150 hover:bg-black hover:text-white"
-            >
-              Contact
-            </Link>
-          </div>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/"
+            className="inline-flex h-11 items-center rounded-md bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary/90 hover:-translate-y-0.5"
+          >
+            Go Home
+          </Link>
+          <Link
+            href="/contact"
+            className="inline-flex h-11 items-center rounded-md border border-border px-8 text-sm font-semibold text-foreground transition-all hover:bg-accent hover:-translate-y-0.5"
+          >
+            Contact
+          </Link>
         </div>
       </div>
-
-      {/* ── Bottom rule ── */}
-      <div className="h-px w-full bg-zinc-200" />
     </main>
   )
 }
