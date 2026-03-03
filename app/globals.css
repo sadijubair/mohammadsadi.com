@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* ── Siyam Rupali (Bengali) ── */
+@font-face {
+  font-family: 'Siyam Rupali';
+  font-display: swap;
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('https://fonts.maateen.me/siyam-rupali/siyam-rupali-v1.070.woff2') format('woff2'),
+       url('https://fonts.maateen.me/siyam-rupali/siyam-rupali-v1.070.ttf') format('truetype');
+}
+
 /* ── Dark mode: applies when <html> has class="dark" (next-themes) ── */
 @variant dark (&:where(.dark, .dark *));
 
@@ -25,7 +35,7 @@
   --color-ring:               var(--ring);
 
   --font-sans:    var(--font-noto-sans), "Noto Sans", system-ui, sans-serif;
-  --font-bengali: var(--font-noto-bengali), "Noto Sans Bengali", sans-serif;
+  --font-bengali: "Siyam Rupali", var(--font-noto-bengali), "Noto Sans Bengali", sans-serif;
   --font-mono:    ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
 
   --radius-sm: 0.25rem;
@@ -112,14 +122,14 @@ html {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-noto-sans), "Noto Sans", system-ui, sans-serif;
+  font-family: var(--font-noto-sans), "Noto Sans", "Siyam Rupali", var(--font-noto-bengali), "Noto Sans Bengali", system-ui, sans-serif;
   overflow-x: hidden;
   transition: background-color 0.2s ease, color 0.15s ease;
 }
 
-/* Bengali text fallback */
+/* Bengali text */
 :lang(bn), .font-bengali {
-  font-family: var(--font-noto-bengali), "Noto Sans Bengali", sans-serif;
+  font-family: var(--font-bengali);
 }
 
 /* Scrollbar */
