@@ -15,18 +15,6 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Redirect www → non-www so Google sees only one canonical domain.
-  async redirects() {
-    return [
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "www.mohammadsadi.com" }],
-        destination: "https://mohammadsadi.com/:path*",
-        permanent: true,
-      },
-    ];
-  },
-
   async headers() {
     return [
       {
