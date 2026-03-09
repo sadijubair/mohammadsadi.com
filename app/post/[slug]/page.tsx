@@ -251,6 +251,7 @@ export async function generateMetadata({
       type: "article",
       url: postUrl,
       siteName: "Mohammad Sadi",
+      locale: "en_US",
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: post.title }],
       publishedTime: post.publishedAt ?? post._createdAt,
       authors: post.author?.name ? [post.author.name] : [],
